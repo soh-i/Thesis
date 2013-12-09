@@ -3,7 +3,7 @@ DVIPDFM = dvipdfmx
 BIBTEX = pbibtex
 DVIPDFMFLAGS = -p a4
 
-TARGET = Thesis
+TARGET = main
 
 LaTeXDocument($(TARGET), $(TARGET))
 

@@ -1,0 +1,42 @@
+\newif\ifjapanese
+
+\japanesetrue
+
+\ifjapanese
+	\documentclass[11pt]{jreport}
+	\renewcommand{\bibname}{参考文献}
+	\newcommand{\acknowledgmentname}{謝辞}
+\else
+	\documentclass[11pt]{report}
+	\newcommand{\acknowledgmentname}{Acknowledgment}
+\fi
+\usepackage{ascmac}
+\usepackage{graphicx}
+\usepackage{multirow}
+\usepackage{style}
+
+%\bindermode
+
+\jclass   {卒業論文}
+\jtitle   {RNA editingサイトの検出手法の開発とその解析}
+\juniv    {慶應義塾大学}
+\jfaculty {環境情報学部}
+\jauthor  {石黒 宗}
+\jhyear	  {25}
+\jsyear	  {2013}
+\jkeyword {Bioinformatics, RNA-seq, RNA editing}
+
+\begin{document}
+\jmaketitle
+
+\include{00_abstract}
+
+\tableofcontents	% 目次
+%\listoffigures		% 表目次
+%\listoftables		% 図目次
+
+\pagenumbering{arabic}
+
+\include{01}
+
+\end{document}
