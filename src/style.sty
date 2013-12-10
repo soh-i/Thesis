@@ -129,11 +129,8 @@
 
 % 参考文献環境の作成
 \newenvironment{bib}[1][100]{%
-	\addcontentsline{toc}{chapter}{\bibname}
-	\begin{thebibliography}{#1}
-}{
-	\end{thebibliography}
-}
+  \addcontentsline{toc}{chapter}{\bibname}
+}{}
 
 % subsubsection 環境の設定変更
 \setcounter{secnumdepth}{3}
