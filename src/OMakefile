@@ -1,0 +1,18 @@
+LATEX = platex -interaction=nonstopmode
+DVIPDFM = dvipdfmx
+BIBTEX = pbibtex
+DVIPDFMFLAGS = -p a4
+
+TARGET = main
+
+LaTeXDocument($(TARGET), $(TARGET))
+
+.PHONY: clean preview
+.DEFAULT: $(TARGET).dvi $(TARGET).pdf
+
+clean:
+	/bin/rm -rf *.toc *.log *.dvi *.fls *.aux *.snm *.nav *.out *.bbl *.blg *.vrb
+
+preview: 
+	/usr/bin/open -a "Preview.app" $(TARGET).pdf
+
