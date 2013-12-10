@@ -18,6 +18,7 @@
 \def\eyear#1{\gdef\@eyear{#1}}
 \def\ekeyword#1{\gdef\@ekeyword{#1}}
 
+
 % 余白設定（左右対称）
 \setlength{\textwidth}{15.92cm}
 \setlength{\oddsidemargin}{0mm}
@@ -51,15 +52,14 @@
 \def\@jmaketitle{%
   \thispagestyle{empty}
   \begin{center}
-  	{\Large \@jsyear 年度 }
-	%\vspace{0.5cm}\par
-	{\Large \@jclass}
+  	{\LARGE \@jsyear 年度 }
+	{\LARGE \@jclass}
 	\vfill
 	\begin{lineskiptitle}		
-	  {\huge\bf \@jtitle}
+	  {\LARGE \@jtitle}
 	\end{lineskiptitle}
 	\vfill
-		{\Large \@juniv\ \@jfaculty}
+		{\LARGE \@juniv\ \@jfaculty}
 		\vspace{0.5cm}\par
 		       {\LARGE \@jauthor}
 		       \vspace{2cm}\par
@@ -77,19 +77,25 @@
 % アブストラクトの定義（日本語）
 \newenvironment{jabstract}{%
   \begin{center}
-	%{\Large\bf \@jclass 概要 \@jsyear 年度（平成\@jhyear 年度）}
 	\vspace{1cm}\par
 	\begin{lineskipabst}
       {2013年度 卒業論文} \\
-      {タイトル}\\
-	  {\bf 要旨}\\
+      \vspace{1cm}\par 
+      {\@jtitle}\\
+      {\@juniv\ \@jfaculty}
+      \par
+      {\@jauthor}
+      \par
+	  \vspace{1cm}\par
+	  {\bf 論文要旨}\\
 	\end{lineskipabst}
   \end{center}
   \parindent=1zw
   \ifjapanese \else \renewcommand{\baselinestretch}{1.15}\selectfont \fi
 }{
-  \vfill
-	  {\bf キーワード：} \@jkeyword
+  \\
+  \\
+	  {\bf キーワード:} \@jkeyword
 	  \ifjapanese \parindent=1zw \else \parindent=1.6zw \fi
 	  \renewcommand{\baselinestretch}{1.0}\selectfont
 }

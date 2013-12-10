@@ -6,6 +6,9 @@
 	\documentclass[11pt]{jreport}
 	\renewcommand{\bibname}{参考文献}
 	\newcommand{\acknowledgmentname}{謝辞}
+	\renewcommand{\rmdefault}{ptm} % ローマンフォントをTimes
+	\renewcommand{\sfdefault}{phv} % サンセリフをHelvetica
+	\renewcommand{\baselinestretch}{1.3} %行間の倍率
 \else
 	\documentclass[11pt]{report}
 	\newcommand{\acknowledgmentname}{Acknowledgment}
@@ -19,11 +22,10 @@
 \normalfont
 \usepackage{mathptm}
 
-
 %\bindermode
 
 \jclass   {卒業論文}
-\jtitle   {RNA editingサイトの検出手法の開発とその解析}
+\jtitle   {RNA editingサイトの検出手法の開発とその解析\\ Development of RNA editing sites detection method based on HTSeq data}
 \juniv    {慶應義塾大学}
 \jfaculty {環境情報学部}
 \jauthor  {石黒 宗}
@@ -46,6 +48,5 @@
 \include{conclusion}
 \include{acknowledgements}
 \include{reference}
-
 
 \end{document}
