@@ -1,20 +1,55 @@
 \chapter{クマムシにおけるRNA editingサイトの解析}
 
 \section{研究概要}
-一時的に代謝の停止した乾眠状態となり、乾眠状態からは吸水によって生命活動を再開する。このような可逆性を持つ乾眠状態は同時に、タンパク質の変性と凝集、核酸の損傷などを引き起こすため、多くの乾眠動物では遺伝子発現の様式を大規模に変化させ、保護物質としてのトレハロースやLEAタンパクを蓄積させている。ところが、{\it R. varieornatus}は急速に乾眠状態へと移行するため、活動状態と乾眠状態では、遺伝子発現変動が僅かである特徴が明らかになってきた。このような急速に移行する {\it R. varieornatus}の乾眠は、定常的に発現している遺伝子群に加え、RNA editingを始めとする転写産物への修飾や、タンパク質のリン酸化修飾などによる制御が示唆されている。そこで本研究では、RNA-seqデータを用いて{\it R. varieornatus}におけるRNA editingサイトのゲノムワイドな検出を行った。RNA editingサイトはRNA-seqリードをゲノムにマッピングした際の変異箇所として検出できるが、その多くは様々なバイアスに起因した擬陽性を示す。これらを複数の統計手法を組み合わせることで取り除いた結果、{\it R. varieornatus}における全ての状態のトランスクリプトームから、他の真核生物と同様にA-to-G editingが優勢であることが示された。A-to-G editingサイトは、熱ショックタンパク質 (DnaJ)など分子シャペロンとして機能するタンパクから同定されており、{\it R. varieornatus}におけるRNA editingによる乾眠の制御機構が示唆された。
+生命にとって生体内における水分子の損失は生存に深刻な影響を与える。一方で、{\it Ramazzottius varieornatus}を始めとする乾眠動物は、脱水により一時的に代謝の停止した乾眠状態となり、乾眠状態からは吸水によって生命活動を再開する。このような可逆性を持つ乾眠状態は同時に、タンパク質の変性と凝集、核酸の損傷などを引き起こすため、多くの乾眠動物では遺伝子発現の様式を大規模に変化させ、保護物質としてのトレハロースやLEAタンパクを蓄積させている。ところが、{\it R. varieornatus}は急速に乾眠状態へと移行するため、活動状態と乾眠状態では、遺伝子発現変動が僅かである特徴が明らかになってきた。このような急速に移行する {\it R. varieornatus}の乾眠は、定常的に発現している遺伝子群に加え、RNA editingを始めとする転写産物への修飾や、タンパク質のリン酸化修飾などによる制御が示唆されている。そこで本研究では、RNA-seqデータを用いて{\it R. varieornatus}におけるRNA editingサイトのゲノムワイドな検出を行った。RNA editingサイトはRNA-seqリードをゲノムにマッピングした際の変異箇所として検出できるが、その多くは様々なバイアスに起因した擬陽性を示す。これらを複数の統計手法を組み合わせることで取り除いた結果、{\it R. varieornatus}における全ての状態のトランスクリプトームから、他の真核生物と同様にA-to-G editingが優勢であることが示された。A-to-G editingサイトは、熱ショックタンパク質 (DnaJ)など分子シャペロンとして機能するタンパクから同定されており、{\it R. varieornatus}におけるRNA editingによる乾眠の制御機構が示唆された。
 
 \section{背景}
+
 \section{解析データと手法}
 \subsection{解析データ}
+RNA-seqは、Illumina Genome Analyzer IIxを用いてリード長75bpのPaired-endシーケンシングされた{\it R. varieornatus}の活動状態 (Active)/乾眠状態 (Tun)/乾眠復帰後80分 (Recovery 80m)/復帰後240分 (Recovery 3h)の計4状態のデータを用いた。また、各状態におけるサンプル数はn=1である。ゲノムのシークエンスデータ (以下Genomic-seqと略す)はIllumina GAIIxを用い、3つのレプリケーションでシーケンスされたデータを用いた。RNA-seqデータおよびGenomic-seqデータは、FastQC v0.10.0 (\url{http://www.bioinformatics.babraham.ac.uk/projects/fastqc/})を用いてリードの品質に問題がないことを確認した。RNA editingサイトの検出には、各状態におけるRNA-seqデータを用いた。Genomic-seqリードは、ゲノムに見られるSNPをリストし、 Editingサイトがトランスクリプトーム由来であることを保証するデータとして利用した。{\it R. varieornatus}のアノテーションは、最新のYOKOZUNA0703を解析に使用した。
+
 \subsection{リードのマッピング}
+Genomic-seqおよびRNA-seqのマッピングは、現在までに非常に多くのソフトウェアが開発されており、本研究でも様々なソフトウェアによるマッピング手法の検討を行った。結果、Genomic-seqおよびRNA-seqリード共にTopHat v.2.0.2 \citep{pmid19289445}が最適だと判断した。以下に計算に用いた詳細なパラメータについて述べる。
+\par
+RNA-seqリードのマッピングにおいて、BWAやBowtieといったアライナーは、ゲノムへのマッピングを前提として設計されていることから、転写物のリードに含まれるスプライスサイト周辺のリードは、ジャンクション領域への適切なマッピングが難しいことが指摘されている \citep{pmid22383036}。これをふまえRNA-seqリードにおいては、{\it R. varieornatus}ドラフトゲノムへ、TopHat v2.0.5を用いたSplice junction mappingを実行した。計算に際してのオションについては、--read-realign-edit-dist 0 --max-multihits 1 --microexon-search --coverage-search --read-mismatches 2 --read-gap-length 0 --read-edit-dist 2 --b2-very-sensitiveをそれぞれ設定した。リード内にはギャップを許さず、許容するミスマッチ数は2とした。また、micro-exon-searchにより短い領域のExonも検出できるようにした。加えて、ゲノム中にユニークにマップされたリードのみを用いた。マッピング後の処理として、INDEL (Insertion and Deletion)を含んだリードは、正確なマッピングが保証できないと考え、該当するリードは削除した。INDELについての情報は、マッピングによって得られるBAMファイルに記述されている。Genomic-seqは、Illumina GAIIxを用いて75bpのpaired-endシークエンスされた3つのレプリケートをそれぞれ{\it R. varieornatus}ドラフトゲノムへマッピングした。パラメータはRNA-seqと同様に設定した。また、INDELリードの削除もRNA-seqリードと同様に行った。
+
 \subsection{統計的フィルタリングを用いたRNA editingサイトの検出}
+\subsubsection{RNA editingサイトの検出}
+RNA editingサイトの検出には、次世代シーケンサーを用いた変異解析で用いられるSamtools/bcftools \citep{pmid21903627}を使用し、フィルタリングにはカスタムスクリプトを使用した。Samtools/bcftoolsは、Genomic-seqだけでなくRNA-seqへ適用し、RNA editingサイトの同定に用いた研究も存在することから \citep{pmid22524474}、SNP解析用のソフトフェアを使用することは妥当と考えた。
+\par
+先学期は、マッピング後のデータから尤度比検定の一種であるG検定を用いた検出を行ったが、A-to-G editing以外のミスマッチパタンが優勢を占めており、多くの擬陽性は減らすことができなかった。また、適合率および再現率によって予測精度を検証したところ、予測精度が非常に低いことも課題であった。G検定を用いる利点は、スコアの計算に転写産物に見られる変異とゲノムに見られる変異、その両方の情報を用いることである。そのため、変異箇所が転写物のみから検出されたのか、あるいはSNPなどゲノム中の変異を反映した結果なのか判断可能だった。そこで、本研究では、Genomic-seqからもSNPの検出を行うことで、EditingサイトとSNPの位置が一致した場合は除外するようにし、G検定の利点を取り込むことにした。
+
+\subsubsection{バイアスとその統計的フィルタリング}
+Samtools/bcftoolsによって抽出したゲノム配列とのミスマッチポジションに対して、リードカバレッジが20未満のポジションは解析から除外し、ゲノム配列がNである場合はも同様に除外するようにした。このフィルタリングを通過した変異サイトについて、統計的フィルタリングを適用した。本研究では、先行研究によって指摘されている3つのバイアスについて、統計的フィルタリングによって多数を占める擬陽性を減少させることを目的とした。
+\par
+%ストランドバイアス
+ストランドバイアスは、同定されたRNA editingサイトをサポートするリードの方向　(正鎖/逆鎖)に見られるバイアスを指す。ストランドのバイアスが無い場合、ミスマッチは正鎖および逆鎖の両方から等確率で観測されると期待されるが、多くのミスマッチ箇所においてはどちらか一方のストランドに集中してミスマッチが観測される。ストランドバイアスの検出には、2×2のクロス集計表に基づいてフィッシャーの正確確率検定 ($p<0.01$)を行う。クロス集計表は、Editingされた正鎖、Editingされた逆鎖、Editingされていない正鎖、Editingされていない逆鎖に対応する。
+\par
+%ベースコールバイアス
+ベースコールバイアスは、任意のポジションにマップされた塩基のベースコール精度のバイアスを指す。マッチした塩基とミスマッチした塩基におけるベースコール精度にバイアスが見られ、Editingサイトとしてコールされたミスマッチ塩基のベースコールクオリティが極端に低い場合がある。整数値で表現されたマッチ塩基のベールコール精度およびミスマッチ塩基ベールコール精度を利用し、両側t検定($p<0.01$)で検定する。
+
 \subsection{プロテオームデータの解析}
+本研究で検出されたRNA editingサイトの検証を行うために、質量分析計によるショットガンプロテオミクスを用いてシークエンスされたペプチドの配列情報を利用した。ペプチド配列は、長谷部氏らによって提供されたデータである。アノテーションとなる{\it R. varieornatus}のアミノ酸配列と質量分析から得られたペプチド配列とのミスマッチ残基は、ADARによるEditingの結果であることの根拠となると考えた。アミノ酸のシークエンスをもとにRNA-seqデータから同定されたRNA editingサイトを検証する例はこれまでに報告されており \citep{pmid21596952}、サンガー法による転写領域の再シーケンシングと並び、有効かつ主要な予測されたRNA editingサイトの検証方法である。
+\par
+解析には、Mascot \citep{pmid10612281}から得られたTun状態におけるペプチド配列5090本を用いた。このフラグメントは平均は14残基であった。{\it R. varieornatus}のアミノ酸配列に対してBLASTP (Protein Basic Local Alignment Search Tool) \citep{pmid9254694}を用いて相同性検索を行った。このとき、ペプチド配列とクマムシのアミノ酸配列の双方向のベストヒットスコアの結果から、ペプチド配列における変異を検出した。BLASTPによる相同性検索の際、E-valueは1e-10の閾値を設けた。
+
 \subsection{ADARホモログの予測}
+{\it R. varieornatus}において、ADARファミリーのホモログが存在しかつ、それぞれの4状態における転写物の発現量を確認することは重要である。4状態のRNA-seq tagsからCufflinks \citep{pmid22383036}を用いてRNA-seq tagsから遺伝子発現量を定量した。加えて、ADARが機能を有するためには、二本鎖RNAを特異的に認識するDSRB (Double-strand RNA binding)ドメインや、ターゲットサイトとなるアデニンからグアニンへの置換を触媒するDeaminaseドメインが必須である。このことから{\it R. varieornatus}におけるADARホモログ配列における、機能ドメインの予測を行った。予測にはADARファミリーのドメインから生成された隠れマルコフモデルをPfam \citep{pmid22127870}より取得し (PF00035.20/PF02137.13)、HMMER v.3.0 \citep{pmid22039361}による予測を行った。このとき、E-valueの閾値を1e-20とした。
+
 \subsection{検出手法の精度検証}
+\subsubsection{適合率・再現率による精度検証}
+本研究で用いたRNA editingサイトの同定手法を他の生物種に適用することにより、本手法の予測性能および再現性を評価した。評価には、適合率 (Precision)および再現率 (Recall)と呼ばれる指標を導入した。再現率は$TP/(TP+FN)$、適合率は$FP/(TP+FP)$と定義される。 適合率は、予測結果に含まれる正解となるRNA editingサイトの割合を示し、再現率は、予測した全Editingサイトのなかに正解データが含まれる割合を示す指標である。この2つの指標はトレードオフに関係にあるため、両指標の調和平均をとったF値も加えて評価尺度として用いた。F値は、$F=2 \times Recall \times Precision/Recall+Precision$と定義される指標である。
+
+\subsubsection{正解となるデータセット}
+Rodriguez \citep{pmid22658416}らによる{\it D. melanogaster} (yellow white strain)の頭部から抽出されたZT14 (3〜4日の成熟個体)ステージにおける1.3億塩基のRNA-seqリード (Illumina GAII single-end)を公共データベースにより取得し解析を行った (GEO Accession No. GSE37232)。RNA-seqデータのマッピングは論文に記載されたソフトウェアとパラメータを使用した。TopHat v.1.3を使用し、-m 1 -F 0 --microexon-search --no-closure-search -G 20120309UCSC.gene.gtf --solexa-quals -I 50000である。遺伝子情報のアノテーションは、UCSC (University of California, Santa Cruz)の提供する20120309UCSC.gene.gtfを用いた。遺伝子のアノテーションは、Illumina iGenome (\url {ftp://igenome:G3nom3s4u@ussd-ftp.illumina.com/Drosophila_melanogaster/UCSC/dm3/Drosophila_melanogaster_UCSC_dm3.tar.gz)}から取得した。{\it D. melanogaster}におけるRNA editingサイトの正解セットは、modENCODEプロジェクトによって同定された1657箇所 \citep{pmid21179090}、\citep{pmid22658416}で同定された1969箇所に共通していた312箇所を用いた。この312箇所を正解セットとして、先学期の結果 (G検定)、統計的なフィルタリングを行う前後の3つの予測セットを用意し、適合率と再現率による予測性能の評価を行った。
+
+
 \section{結果}
 \subsection{検出されたサイト}
 \subsection{Editingサイトの特徴解析}
 \subsection{同定手法の精度}
 \subsection{同定されたADARホモログ}
 \subsection{ペプチド断片から見出されたアミノ酸変異}
+
 \section{議論}
