@@ -5,7 +5,7 @@
 
 \section{背景}
 
-\section{解析データと手法}
+\section{対象と手法}
 \subsection{解析データ}
 RNA-seqは、Illumina Genome Analyzer IIxを用いてリード長75bpのPaired-endシーケンシングされた{\it R. varieornatus}の活動状態 (Active)/乾眠状態 (Tun)/乾眠復帰後80分 (Recovery 80m)/復帰後240分 (Recovery 3h)の計4状態のデータを用いた。また、各状態におけるサンプル数はn=1である。ゲノムのシークエンスデータ (以下Genomic-seqと略す)はIllumina GAIIxを用い、3つのレプリケーションでシーケンスされたデータを用いた。RNA-seqデータおよびGenomic-seqデータは、FastQC v0.10.0 (\url{http://www.bioinformatics.babraham.ac.uk/projects/fastqc/})を用いてリードの品質に問題がないことを確認した。RNA editingサイトの検出には、各状態におけるRNA-seqデータを用いた。Genomic-seqリードは、ゲノムに見られるSNPをリストし、 Editingサイトがトランスクリプトーム由来であることを保証するデータとして利用した。{\it R. varieornatus}のアノテーションは、最新のYOKOZUNA0703を解析に使用した。
 
@@ -29,16 +29,11 @@ Samtools/bcftoolsによって抽出したゲノム配列とのミスマッチポ
 %ベースコールバイアス
 ベースコールバイアスは、任意のポジションにマップされた塩基のベースコール精度のバイアスを指す。マッチした塩基とミスマッチした塩基におけるベースコール精度にバイアスが見られ、Editingサイトとしてコールされたミスマッチ塩基のベースコールクオリティが極端に低い場合がある。整数値で表現されたマッチ塩基のベールコール精度およびミスマッチ塩基ベールコール精度を利用し、両側t検定($p<0.01$)で検定する。
 
-\subsection{プロテオームデータの解析}
-本研究で検出されたRNA editingサイトの検証を行うために、質量分析計によるショットガンプロテオミクスを用いてシークエンスされたペプチドの配列情報を利用した。ペプチド配列は、長谷部氏らによって提供されたデータである。アノテーションとなる{\it R. varieornatus}のアミノ酸配列と質量分析から得られたペプチド配列とのミスマッチ残基は、ADARによるEditingの結果であることの根拠となると考えた。アミノ酸のシークエンスをもとにRNA-seqデータから同定されたRNA editingサイトを検証する例はこれまでに報告されており \citep{pmid21596952}、サンガー法による転写領域の再シーケンシングと並び、有効かつ主要な予測されたRNA editingサイトの検証方法である。
-\par
-解析には、Mascot \citep{pmid10612281}から得られたTun状態におけるペプチド配列5090本を用いた。このフラグメントは平均は14残基であった。{\it R. varieornatus}のアミノ酸配列に対してBLASTP (Protein Basic Local Alignment Search Tool) \citep{pmid9254694}を用いて相同性検索を行った。このとき、ペプチド配列とクマムシのアミノ酸配列の双方向のベストヒットスコアの結果から、ペプチド配列における変異を検出した。BLASTPによる相同性検索の際、E-valueは1e-10の閾値を設けた。
-
 \subsection{ADARホモログの予測}
 {\it R. varieornatus}において、ADARファミリーのホモログが存在しかつ、それぞれの4状態における転写物の発現量を確認することは重要である。4状態のRNA-seq tagsからCufflinks \citep{pmid22383036}を用いてRNA-seq tagsから遺伝子発現量を定量した。加えて、ADARが機能を有するためには、二本鎖RNAを特異的に認識するDSRB (Double-strand RNA binding)ドメインや、ターゲットサイトとなるアデニンからグアニンへの置換を触媒するDeaminaseドメインが必須である。このことから{\it R. varieornatus}におけるADARホモログ配列における、機能ドメインの予測を行った。予測にはADARファミリーのドメインから生成された隠れマルコフモデルをPfam \citep{pmid22127870}より取得し (PF00035.20/PF02137.13)、HMMER v.3.0 \citep{pmid22039361}による予測を行った。このとき、E-valueの閾値を1e-20とした。
 
 \subsection{検出手法の精度検証}
-\subsubsection{適合率・再現率による精度検証}
+\subsubsection{適合率および再現率による精度検証}
 本研究で用いたRNA editingサイトの同定手法を他の生物種に適用することにより、本手法の予測性能および再現性を評価した。評価には、適合率 (Precision)および再現率 (Recall)と呼ばれる指標を導入した。再現率は$TP/(TP+FN)$、適合率は$FP/(TP+FP)$と定義される。 適合率は、予測結果に含まれる正解となるRNA editingサイトの割合を示し、再現率は、予測した全Editingサイトのなかに正解データが含まれる割合を示す指標である。この2つの指標はトレードオフに関係にあるため、両指標の調和平均をとったF値も加えて評価尺度として用いた。F値は、$F=2 \times Recall \times Precision/Recall+Precision$と定義される指標である。
 
 \subsubsection{正解となるデータセット}
@@ -50,6 +45,5 @@ Rodriguez \citep{pmid22658416}らによる{\it D. melanogaster} (yellow white st
 \subsection{Editingサイトの特徴解析}
 \subsection{同定手法の精度}
 \subsection{同定されたADARホモログ}
-\subsection{ペプチド断片から見出されたアミノ酸変異}
 
 \section{議論}

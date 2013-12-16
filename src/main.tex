@@ -1,3 +1,4 @@
+
 \newif\ifjapanese
 
 \japanesetrue
@@ -15,7 +16,11 @@
 \fi
 
 \usepackage{ascmac}
-\usepackage{graphicx}
+%\usepackage{graphicx}
+%\usepackage[dvips]{graphicx}
+\usepackage[dvipdfmx]{graphicx}
+\graphicspath{{./figure/}}
+
 \usepackage{multirow}
 \usepackage{style}
 \usepackage{times}
@@ -23,7 +28,6 @@
 \normalfont
 \usepackage{mathptm}
 \usepackage{url}
-
 \usepackage[sort,colon]{natbib}
 \bibliographystyle{natbib}
 \setlength{\bibsep}{4pt}
@@ -32,7 +36,8 @@
 %\bindermode
 
 \jclass   {卒業論文}
-\jtitle   {RNA editingサイトの検出手法の開発とその解析\\ Development of RNA editing sites detection method based on HTSeq data}
+\jtitle   {超並列シーケンサーデータを用いたRNA editingサイトの検出手法の開発とその情報学的解析}
+\etitle   {Development for detection method of RNA editng sites based on high-throughput sequencing data}
 \juniv    {慶應義塾大学}
 \jfaculty {環境情報学部}
 \jauthor  {石黒 宗}
@@ -41,7 +46,11 @@
 \jkeyword {Bioinformatics, RNA-seq, RNA editing}
 
 \begin{document}
-\jmaketitle
+\ifjapanese
+  \jmaketitle    % 表紙（Japanese）
+\else
+  \emaketitle    % 表紙 (English)
+\fi
 
 \include{00_abstract}
 

@@ -55,8 +55,11 @@
   	{\LARGE \@jsyear 年度 }
 	{\LARGE \@jclass}
 	\vfill
-	\begin{lineskiptitle}		
-	  {\LARGE \@jtitle}
+	\begin{lineskiptitle}
+    \setlength{\baselineskip}{34pt}
+	  {\LARGE \@jtitle}\\
+    \par
+    {\LARGE \@etitle}
 	\end{lineskiptitle}
 	\vfill
 		{\LARGE \@juniv\ \@jfaculty}
@@ -66,6 +69,34 @@
 		       %{\Large 指導教員：\ \@jadvisor\ \@jposition}
   \end{center}
   \newpage
+  \pagenumbering{roman}
+}
+
+% 表紙の定義（英語）
+\def\emaketitle{\par
+  \begingroup
+  \@emaketitle
+  \endgroup
+}
+\def\@emaketitle{%
+  \thispagestyle{empty}
+  \begin{center}
+    {\Large \@eclass\  (Academic Year \@eyear)}
+    \vfill
+    \begin{lineskiptitle}    
+    c
+    \end{lineskiptitle}
+    \vfill
+    {\Large \@euniv\par \@efaculty}
+    \vspace{0.5cm}\par
+    {\LARGE \@eauthor}
+    \vspace{2cm}\par
+    {\Large \@eproject}
+    \vspace{0.5cm}\par
+    {\Large \@edate}
+  \end{center}
+  %\newpage
+  \cleardoublepage
   \pagenumbering{roman}
 }
 
@@ -82,6 +113,7 @@
       {2013年度 卒業論文} \\
       \vspace{1cm}\par 
       {\@jtitle}\\
+      {\@etitle}\\
       {\@juniv\ \@jfaculty}
       \par
       {\@jauthor}
@@ -105,6 +137,33 @@
 	\section*{\contentsname}
 	\@starttoc{toc}
 	\newpage
+}
+
+% アブストラクトの定義（英語）
+\newenvironment{eabstract}{%
+  \begin{center}
+    {\Large\bf Abstract Of \@eclass\ \ \ Academic Year \@eyear}
+    \vspace{0.3cm}\par
+    \begin{lineskipabst}
+    {\LARGE\sf \@etitle}\vspace{2cm}
+    \end{lineskipabst}
+  \end{center}
+  \parindent=1.6zw
+  \section*{Summary}
+  \ifjapanese \renewcommand{\baselinestretch}{0.89}\selectfont \fi
+}{
+  \section*{Keywords}
+  \@ekeyword \par
+  \vspace{1.cm}\par
+  {\@efaculty} \par
+  {\@euniv} 
+  \begin{flushright}
+    {\@eauthor}
+  \end{flushright} 
+
+  \cleardoublepage
+  \ifjapanese \parindent=1zw \else \parindent=1.6zw \fi
+  \renewcommand{\baselinestretch}{1.0}\selectfont
 }
 
 % 図目次環境再定義
