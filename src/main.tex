@@ -10,6 +10,7 @@
 	\renewcommand{\rmdefault}{ptm} % ローマンフォントをTimes
 	\renewcommand{\sfdefault}{phv} % サンセリフをHelvetica
 	\renewcommand{\baselinestretch}{1.2} %行間の倍率
+	\newcommand{\bi}{\bfseries\itshape} % bold italic
 \else
 	\documentclass[11pt]{report}
 	\newcommand{\acknowledgmentname}{Acknowledgment}
@@ -17,8 +18,8 @@
 
 \usepackage{ascmac}
 %\usepackage{graphicx}
-%\usepackage[dvips]{graphicx}
 \usepackage[dvipdfmx]{graphicx}
+
 \graphicspath{{./figure/}}
 
 \usepackage{multirow}
