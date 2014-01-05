@@ -1,4 +1,3 @@
-
 \newif\ifjapanese
 
 \japanesetrue
@@ -16,16 +15,23 @@
 	\newcommand{\acknowledgmentname}{Acknowledgment}
 \fi
 
+\setlength\abovecaptionskip{0pt} % 図とキャプションの間のスペース
+\setlength\intextsep{8pt}        % ページの途中に出力される図と本文の間のスペース
+\setlength\textfloatsep{8pt}     % ページの上下に出力される図と本文の間のスペース
+\setlength\floatsep{8pt}         % ページの上下に出力される図と図の間のスペース
+
 \usepackage{ascmac}
 %\usepackage{graphicx}
 \usepackage[dvipdfmx]{graphicx}
 
 \graphicspath{{./figure/}}
-
+\usepackage[normal,bf,singlelinecheck=off]{caption}
 \usepackage{multirow}
 \usepackage{style}
 \usepackage{times}
+\usepackage{subfigure}
 \usepackage[T1]{fontenc}
+\usepackage{longtable}
 \normalfont
 \usepackage{mathptm}
 \usepackage{url}
@@ -33,6 +39,13 @@
 \bibliographystyle{natbib}
 \setlength{\bibsep}{4pt}
 \setlength\baselineskip{11pt}
+\usepackage{amsmath}
+
+% 数式の設定
+\makeatletter
+  \def\@eqnnum{{\normalfont \normalcolor 式(\theequation)}}
+  %式(1.1) みたいにする
+\makeatother
 
 %\bindermode
 
@@ -47,6 +60,9 @@
 \jkeyword {Bioinformatics, RNA-seq, RNA editing}
 
 \begin{document}
+\setlength{\abovedisplayskip}{14pt} % 数式の上部のマージン
+\setlength{\belowdisplayskip}{14pt} % 数式の下部のマージン
+
 \ifjapanese
   \jmaketitle    % 表紙（Japanese）
 \else
