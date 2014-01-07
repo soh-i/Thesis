@@ -1,9 +1,7 @@
 \chapter{クマムシにおけるRNA editingサイトの解析}
 
-\section{研究概要}
+\section{研究背景}
 生命にとって生体内における水分子の損失は生存に深刻な影響を与える。一方で、{\it Ramazzottius varieornatus}を始めとする乾眠動物は、脱水により一時的に代謝の停止した乾眠状態となり、乾眠状態からは吸水によって生命活動を再開する。このような可逆性を持つ乾眠状態は同時に、タンパク質の変性と凝集、核酸の損傷などを引き起こすため、多くの乾眠動物では遺伝子発現の様式を大規模に変化させ、保護物質としてのトレハロースやLEAタンパクを蓄積させている。ところが、{\it R. varieornatus}は急速に乾眠状態へと移行するため、活動状態と乾眠状態では、遺伝子発現変動が僅かである特徴が明らかになってきた。このような急速に移行する {\it R. varieornatus}の乾眠は、定常的に発現している遺伝子群に加え、RNA editingを始めとする転写産物への修飾や、タンパク質のリン酸化修飾などによる制御が示唆されている。そこで本研究では、RNA-seqデータを用いて{\it R. varieornatus}におけるRNA editingサイトのゲノムワイドな検出を行った。RNA editingサイトはRNA-seqリードをゲノムにマッピングした際の変異箇所として検出できるが、その多くは様々なバイアスに起因した擬陽性を示す。これらを複数の統計手法を組み合わせることで取り除いた結果、{\it R. varieornatus}における全ての状態のトランスクリプトームから、他の真核生物と同様にA-to-G editingが優勢であることが示された。A-to-G editingサイトは、熱ショックタンパク質 (DnaJ)など分子シャペロンとして機能するタンパクから同定されており、{\it R. varieornatus}におけるRNA editingによる乾眠の制御機構が示唆された。
-
-\section{背景}
 
 \section{対象と手法}
 \subsection{解析データ}
@@ -41,9 +39,105 @@ Rodriguez \citep{pmid22658416}らによる{\it D. melanogaster} (yellow white st
 
 
 \section{結果}
-\subsection{検出されたサイト}
-\subsection{Editingサイトの特徴解析}
-\subsection{同定手法の精度}
-\subsection{同定されたADARホモログ}
+\subsection{RNA editingサイトの検出}
+RNA-seqデータをTophatによるマッピングし、統計的なフィルタリングを行なっていない全ミスマッチパタンを図 \ref{fig:initial}に示す。4状態のサンプルから検出されたミスマッチの総数は、54,809箇所であった。各サンプルについて詳細を見ていくと、同定されたミスマッチパタンは、全てのサンプルにおいてT-to-Cミスマッチが3000サイト程度であり、最頻出のパタンであった。次いでA-to-Cミスマッチは1000サイト程度であり、A-to-Gミスマッチが優勢的に見られたサンプルはなかった。各サンプルにおけるミスマッチパタンの割合はよく類似しており、特定のサンプルのみで多く観察されるミスマッチパタンは見られなかった。このように、統計的フィルタリングを行う前の結果においては、ADARによるA-to-G変異以外のミスマッチパタンが全サンプルにおいて例外なく見られる傾向であることが示された。このマッピング結果である図 \ref{fig:initial}に対して、各ポジションにおける最小カバレッジを20、先述した3つのバイアスを統計的にフィルタリングすることにより、図 \ref{fig:final}に示した結果を得た。図 \ref{fig:final}が示すように、T-to-GミスマッチやA-to-Cミスマッチは低く抑えられており、統計的フィルタリングによって4状態のトランスクリプトーム全てから合計89個のA-to-G editingが検出され、最頻出のパタンであった。特に、T-to-Gミスマッチは、フィルタリングによって最も減少しているパタンであった。
+%Initial call set
+\begin{figure}[!h]
+	\centering
+		\includegraphics[scale=0.7]{Initial_call.eps}
+		\caption{ゲノム配列へRNA-seqデータをマッピングした結果から直接的に得られた全ミスマッチパタン}
+		\begin{flushleft}
+			\small{Y軸は、塩基置換の全12タイプのミスマッチを表しており、X軸はそれに対応するミスマッチの観測された頻度を示す。用いたRNA-seqの4状態をそれぞれ色分けして表した。}
+		\end{flushleft}
+		\label{fig:initial}
+	\end{figure}
+%Filtered set
+\begin{figure}[!h]
+	\centering
+	\includegraphics[scale=0.7]{Final_Filted_call.eps}
+	\caption{統計的フィルタリングの適用後に観察された全ミスマッチパタン}
+	\begin{flushleft}
+		\small{統計的フィルタリングによって、A-to-Gミスマッチが最頻出であることが示された。図 \ref{fig:initial}で示した結果の98.6\%はフィルタリングされているため、頻度のスケールが異なることに留意。}
+	\end{flushleft}
+	\label{fig:final}
+\end{figure}
+
+\subsection{変異サイトの特徴}
+\subsubsection{A-to-G editingの割合}
+RNA editingの見られた箇所はそのすべての転写物がADARによるEditingを受けるのではなく、{\it D. melanogaster}においては、10\%〜20\%にピークが見られることが明らかになっている。{\it R. varieornatus}におけるRNA editingの割合を観察したところ、図 \ref{fig:freq}に示したように、10\%付近にピークが観察される傾向が見られた。
+
+\begin{figure}[!h]
+	\centering
+	\includegraphics[scale=0.6]{Editing_ratio.eps}
+	\caption{A-to-G editingにおけるEditing率のヒストグラム}
+	\begin{flushleft}
+		\small{同定されたA-to-G editingサイトにおいて、Editingされていた塩基の割合をEditing levelとして算出し、ヒストグラムで示した。Editing levelは、各ポジションごとにおける、AおよびG塩基の数をカウントし、$A_{count}/(A_{count}+G_{count}) \times100$により算出した。}
+	\end{flushleft}
+	\label{fig:freq}
+\end{figure}
+
+\subsubsection{遺伝子構造における分類}
+予測されたA-to-G editingサイトがゲノム構造中のどのような場所に特徴的に見られるのかを観察するため、A-to-G editingサイトとコントロールにおいて、エクソン/イントロン/UTRsによる分類を行った結果を図 \ref{fig:location}に示す。各状態のサンプルとコントロールにおいて、遺伝子構造における分類の比率に関連性が見られるかを評価するため、χ二乗検定 ($p>0.05$)による独立性の検定を行った。結果、両者の間にはエクソン/イントロン/UTRsの比率に有意差は見られないことが分かり ($p=0.87$)、Editingサイトがエクソンが多く位置し、イントロンやUTRsに少ないといった特徴は、Editingサイトに特徴的ではないことが示された。
+			
+\begin{figure}[!h]
+	\centering
+	\includegraphics[scale=0.7]{Location_AG_sites.eps}
+	\caption{遺伝子構造による分類}
+	\begin{flushleft}
+		\small{候補となるRNA editingサイトが位置するExon、Intron、UTRsにおける割合を示す。Y軸に、それぞれ4状態のサンプルにおける割合を示した。A-to-G以外の11タイプのミスマッチが見られたサイトをコントロールに用いた。}
+	\end{flushleft}
+	\label{fig:location}
+\end{figure}
+
+\subsubsection{RNA editingサイトのスプライスサイトからの距離}
+ADARによるRNA editingは、AからGへの置換を引き起こすため、真核生物におけるエクソン-イントロン境界であるDonnor/AcceptorサイトのAG-TGルールを変化させる可能性がある。Donnor/Acceptorサイトがeditingを受けることで、Intron retentionや逆に新生スプライスサイトによって短いエクソンが転写される可能性が指摘されている。検出されたA-to-G editingサイトにおいて、近傍のスプライスサイトとの相対距離を求めた結果を図 \ref{fig:dist}に示す。スプライスサイトからの相対距離がEditingサイト特有に見られる傾向かを検証するため、A-to-G editingサイトと他の11のミスマッチパタンのサイトをコントロールとし、両者において統計的な有意差が見られるかをt検定($p>0.05$)によって検定した。t検定に先立ち、コロモゴロフ・スミノフ検定による正規性ならびに等分散性の検定を行った。結果、A-to-G editingサイトとコントロールサイトの間には有意差があることが示され ($p=3.865e−08$)、コントロールサイトに対して、A-to-G editingサイトでは5'末端側へピークがシフトしている傾向が示された。ただ、これらのA-to-G editingサイトから、スプライスサイトを変えるようなRNA editingサイトは同定されなかった。
+
+\begin{figure}[!h]
+	\centering
+	\includegraphics[scale=0.7]{Distance_SS.eps}
+	\caption{検出されたEditingサイトのスプライスサイトからの相対的距離}
+	\begin{flushleft}
+		\small{X軸はRNA editingサイトの近傍に位置するスプライスサイトからの距離 (bp)を示している。相対距離の算出は、検出されたRNA editingサイトに最も近いAcceptorサイトまたはDonnor サイトからの相対距離を計算した。赤ラベルがA-to-G editing以外のコントロールサイト、緑ラベルはA-to-G editingサイトにそれぞれ対応する。}
+	\end{flushleft}
+	\label{fig:dist}
+\end{figure}
+		
+\subsection{同定手法の精度検証結果}
+	\begin{figure}[!h]
+		\centering
+		\includegraphics[scale=0.7]{PrecisioRecall_plot.eps}
+		\caption{適合率および再現率を用いた精度検証の結果}
+		\begin{flushleft}
+		\small{3つの異なった予測手法における適合率と再現率を示す。赤はG検定を用いた先学期の手法、緑は本研究による手法、青は本研究による統計的フィルタリングを行う前の結果にそれぞれ対応する。また、各点の横に算出した$F$値を示した。}
+		\end{flushleft}
+		\label{fig:predac}
+	\end{figure}
+本研究によるRNA editingの同定手法の妥当性および予測性能を定量的に把握するため、適合率および再現率による同定手法の評価を行った。その結果を図 \ref{fig:predac}に示す。本手法を{\it D. melanogaster} yw strain ZT14サンプルのRNA-seqデータへ適用したところ、適合率は3.7\%、再現率は18.7\%であることが示された。同様に、統計的フィルタリングを適用しなかった場合の結果は、適合率は2.5\%、再現率は67.7\%であった。先学期に用いたG検定を用いた結果は、適合率は0.9\%、再現率は0.5\%と最も低い予測性能を示していた。本研究による統計的フィルタリングを適用することにより、適合率は12\%向上し、再現率は49\%低下することが示された。本手法は、先学期に用いたG検定による検出と比較すると、予測性能は向上していることが示された。
+
+\subsection{同定されたADARのホモログ}
+\subsubsection{ADARホモログの発現量}
+{\it R. varieornatus}におけるADARホモログについて、既知の真核生物のADARのアミノ酸配列を用いたBLASTPによる類似性検索から、ADAR1と類似性の高い遺伝子が{\it R. varieornatus}においても見出された。ADARには複数のファミリーが知られているが、{\it M. musculus}のADAR1との類似性が高いことが示された。加えて、RNA-seq tagsを用いた発現量解析から、{\it R. varieornatus}におけるADARホモログはトランスクリプトームの各状態において定常的に発現していることが確かめられた。また、各サンプルにおいては特異的な発現パタンは観察されなかった (図\ref {fig:ExpAdar})。
+
+\begin{figure}[!h]
+	\centering
+	\includegraphics[scale=0.7]{Adar_expression_yok.eps}
+	\caption{各状態におけるADARホモログの発現量}
+	\begin{flushleft}
+		\small{RNA-seq tagsから定量したADARホモログの発現量を示す。発現量の単位はFPKM (Fragment Per Kilobase per Million)であり、RNA-seq tagsのリードカウントを遺伝子の長さで正規化した値である。}
+	\end{flushleft}
+	\label{fig:ExpAdar}
+\end{figure}
+
+\subsubsection{ADARホモログおいて予測された機能ドメイン}
+ADARは、既知の報告によると、3種類の機能ドメインから構成されていることが明らかになっていることから、HMMERによってDeaminase domainとDouble-strand RNA binding (DSRB)ドメイン、Z-DNA binding domainを探索した。{\it R. varieornatus}のホモログから、DeaminaseドメインおよびDSRBドメインがホモログ内に含まれていることが示された。対して、Z-DNA bindingドメインは類似性に有意差は見られなかった。
 
 \section{議論}
+本研究は、{\it R. varieornatus}の4状態のトランスクリプトームデータからゲノムワイドなRNA editingサイトの検出を行った。4状態のトランスクリプトーム全てから、複数の転写物においてRNA editingによる塩基置換が起きていることが示唆された。12種類全てのミスマッチパタンは、図\ref{fig:initial}で示したように、T-to-GやA-to-Cミスマッチが優勢的であったが、これらのミスマッチパタンは、Illuminaのシーケンスエラーコレクションとして既に報告されている結果とも良く一致していたことから \citep{pmid21576222, pmid22099972}、擬陽性である可能性が高いと考えらた。このRNA-seq tagsのマッピング結果へ、複数の統計的フィルタリングを適用することにより、図\ref{fig:final}で示すような、ADARによると考えられるA-to-Gミスマッチが優勢を占めることが示された。この結果は、フィルタリング無しの結果で優勢的だったT-to-CミスマッチやA-to-Cミスマッチは、フィルタリングによって低く抑えられることを示しており、本研究でマッピングしたデータへ適用したストランドバイアス、ベースコールバイアスによるフィルタリングによる擬陽性の減少が有効であることを示している。このように、初期のマッピング結果に対してフィルタリングを適用することによって初めてA-to-G editingパタンが優勢を占める結果となる傾向は、これまでの報告とも一致するものだった \citep{pmid22499667}。加えて、A-to-G editingがフィルタリングによって優勢を占めるという結果は、ADARによるRNA editingが確認されている{\it D. melanogaster}や{\it H. sapiens}など{\it R.varieornatus}以外の真核生物からの報告とも一致するものであり、{\it R.varieornatus}においてもADARによるRNA editingが主であることを示唆しているものと考えられる。
+\par
+{\it R. varieornatus}におけるRNA editing機構の存在を示唆する根拠は、ADARホモログにおける機能ドメインの探索からも示された。{\it R. varieornatus}のADARホモログは、ADARの機能ドメインとして重要なDeaminaseドメインならびにDSRBドメインが有意に保存されていることが明らかとなり、相同性検索により見つかったホモログは、ADARとしての機能を有している可能性が高いことが示唆された。また、Z-DNA bindingドメインについては{\it R. varieornatus}は類似配列がなかったことも明らかとなった。このドメインは、{\it H. sapiens}のADARファミリーから同定されたドメインであり、{\it Caenorhabditis elegans}や{\it D. melanogaster}からは発見されていないことを考慮すると、必須ドメインではないと推測された。加えて、{\it R. varieornatus}においてADARホモログが同定されたことは、ADARファミリー及び真核生物におけるRNA editingの進化を研究する上での重要な示唆を提供するものと考えられる。
+\par
+同定されたRNA editingサイトにおけるスプライスサイトからの相対距離を観察した結果 (図 \ref{fig:dist})からは、A-to-G editingサイトは、コントロールサイトに対して5'末端側へピークがシフトしていることが示された ($p=3.865e−08$)。この特徴は、{\it R. varieornatus}におけるRNA editingの特徴だと考えられた。また、ADARがイントロン-エクソン境界において二本鎖RNAとなって二次構造を形成するとの報告 \citep{pmid15920480}からも、スプライスサイトの近傍に位置するEditingサイトに関しては、イントロンを介した二次構造の形成のしやすさに関与している可能性が考えられた。同定されたA-to-G editingサイトを遺伝子構造によって分類した結果からは、検出されたRNA Editingサイトとコントロールサイト間には統計的な有意差は見られず ($p=0.87$)、Editingサイトにエクソンが豊富に存在しているなどの特徴はなかった。この結果は、活動状態ならびに復帰後3時間のサンプル、コントロールにおけるイントロン/エクソン/UTRsの比率が類似していることから、RNA-seqに含まれる転写量を反映しているものと考えられた。このように、Editingサイトが高頻度に観察される遺伝子構造上の場所と転写量には相関関係があると思われた。また、{\it H. sapiens}におけるA-to-G editingの報告と類似しているものの \citep{pmid22484847}、{\it M. musculus}においては3'UTRにEditingサイトが偏在している報告 \citep{pmid22448268}があることからも、セルラインや生物種に因る部分が大きいと考えられた。本研究によって明らかにされた{\it R. varieornatus}におけるRNA editingサイトのグローバルな特徴は、真核生物のRNA editingに関する既知の報告と類似する点が多いことが明らかになってきた。この結果は、マッピングデータへの統計的なフィルタリングの有効性ならびに{\it R.varieornatus}におけるRNA editingも真核生物に近い制御を受けている可能性を示唆するものであった。
+\par
+予測精度の検証結果は、図 \ref{fig:predac}に示したように、再現率は3.7\%、適合率は18.7\%であり、統計的フィルタリングの前後では、フィルタリングによって適合率が12\%向上していることが示された。フィルタリングを適用しない場合は非常に多くの擬陽性を含んだEditingサイトを予測するが、そのようなサイトが除外されることによって、適合率は向上したものと考えられる。対して、フィルタリングによって再現率が49\%低下することも明らかになった。RNA editingサイトの検出は、多数のEditingサイトの候補を出力するのではなく、母数は少なくとも確実なEditingサイトを検出することが重要である。加えて再現率と適合率はトレードオフ関係にあるため、再現率が低下していることに関しては、本手法は問題がないと考えられる。また、僅かではあるが、フィルタリングによって$F$値が増加することも示された。一方で、適合率は先学期の結果から向上はしているものの、依然として20\%程度の既知のA-to-G editingサイトの予測にとどまっていることから、予測精度の向上は今後の課題である。
+\par
+検出されたRNA editingは、熱ショックタンパクであるDnaJタンパクのエクソン中に起こるサイトが含まれていることが明らかになった。DnaJファミリーは、乾眠応答の際にタンパクの保護やリフォールディングを行うことがこれまでに確認されており、{\it Milnesium tardigradum} (オニクマムシ)からも報告がある \citep{milne}。{\it R. varieornatus}においても、DnaJタンパクは乾眠応答の際のタンパク保護などに関わっていると考えられ、DnaJへのEditingは、その活性の制御などを示唆する結果であると考えられる。同様に、カルネキシンも分子シャペロンの一種であるとからも、{\it R. varieornatus}におけるRNA editingもタンパクのチューニングや活性の制御などに関わっている可能性が考えられた。
