@@ -1,98 +1,178 @@
-\chapter{検出手法の設計と実装}
+\chapter{ソフトウェア・パッケージIvyの開発}
 \section{研究背景}
-\subsection{開発の経緯}
-RNA editingとは、転写物へ位置特異的に一塩基置換を引き起こす転写後修飾の一種として知られ、アデニン (A)からイノシン (I)へのA-to-I editingがヒトやマウス、ショウジョウバエから多数報告されている。このA-to-I editingはADARと呼ばれる二本鎖RNA結合タンパク質によって触媒されることが知られており、翻訳の段階で置換されたイノシンはグアノシンとして認識されるため、editingを受けた転写物は翻訳の過程において、非同義置換によるスプライシングサイトの変化やタンパク質の高次構造の変化、microRNAへのeditingを介した遺伝子発現の抑制など転写調節に幅広く関与していることが報告されている。近年、RNA-seqデータを用いたゲノムワイドなeditingサイトの同定が多数の組織およびセルラインを用いて行われ、ヒトでは数万箇所のeditingサイトが報告されている。RNA editingサイトはゲノムと転写物の一塩基のミスマッチとして検出可能だが、シーケンシングやマッピングに起因した擬陽性を多く含むため、真のeditingサイトと擬陽性を高精度に分離する検出手法がこれまで多く提案されている。しかしながら、解析に使用された手法の多くはソフトウェアとして公開されておらず、RNA-seqデータを対象としたeditingサイトの検出ソフトウェアは現時点で一つ存在するのみである。そこで本研究では、既存のソフトウェアよりも高速かつ低メモリで動作し、アラインメントデータへの統計的なフィルタリング手法、実験デザインを考慮した解析を可能にするRNA editingサイトの検出パッケージの開発を行った。本パッケージは、既存のソフトウェアと比較して高速か低メモリで動作し、付属するベンチマーキングツールによって、検出したeditingサイトの検出精度を定量的に評価することを可能にした。尚、本パッケージは、GPLの元、オープンソースのフリーウェアとして公開することを予定している。
-
-\subsection{要求分析}
-現在、RNA-seqデータからRNA editingサイトを新規に検出する手法は、REDIToolsの一つの実装に限られている。
+RNA-seqデータを対象としたRNA編集サイトの検出ソフトウェアは、REDITools \citep{Picardi:2013aa}一つの実装に限られている。そのため、SNPやSNVをDNA-seqデータから検出する変異解析用のソフトウェアとして開発されているsamtools mpileup \citep{Li:2009aa}、GATK \citep{McKenna:2010aa}、SOAPsnp \citep{Yu:2013aa}転用した研究例も複数がある \citep{Danecek:2012aa, Chen:2012aa, Sanjana:2012aa, Peng:2012aa}。これは、RNA編集サイトもSNP/SNVの検出も本質的にはショートリードのマッピング結果からゲノム配列との一塩基変異を検出することにほかならないからである。しかしながら、DNA-seqとRNA-seqのアラインメント結果を観察すると、一般にRNA-seqデータはDNA-seqに対して数百倍の変異箇所が見られる。これは、第1章や2章で述べたように、RNA分子の不安定性や複数のマッピングバイアスが影響しているからである。こういった現状において、一つのソフトウェアでRNA編集サイトの検出が完結した例はこれまでにない。一般的には、実験で得られたRNA-seqデータを参照ゲノム配列へ適切なパラメータでマッピングし、そのアラインメントについて数個から多い時には20以上のフィルタリングを通し、最終的にそれらのフィルタリングを通過した箇所をRNA編集サイトとしてリストする、という方法が取られる。変異解析のソフトウェアを用いた場合でも、下流解析では独自のフィルタリング過程を必ず設け、擬陽性を減少させる工夫が行われている。そのため、必然的に情報解析のワークフローは複数のフィルタリングと条件分岐によって複雑化する。
 \par
-こういった背景から本研究では、以下の内容を含んだソフトウェア・パッケージ、Ivyの設計と実装を行った。
-\begin{enumerate}
-	\renewcommand{\labelenumi}{(\roman{enumi})}
-	\item RNA-seqデータから高速かつ高精度にRNA editingサイトを検出するソフトウェア
-	\item 本ソフトウェアにより検出された新規RNA editingサイトの検出精度を評価するベンチマークツール
-\end{enumerate}
-
-\section{設計と実装}
-\subsection{システムの設計}
-IvyはUnix環境で動作するコマンドラインツールとして開発され、Pythonによって実装されている。入力で与えられたSAM/BAMファイルは、Pysam (Python interface for the SAM/BAM sequence alignment and mapping format)ライブラリを使用して参照ゲノムへのアラインメント結果を取得している。Pysamは、Cで書かれたSAM/BAMのパーサー (Samtools C API)とのバインディングであり、Pythonのインターフェースから高速にアラインメント情報を取得可能であることから採用した。
-Ivyは、ソースコードに同梱されているインストールスクリプトが必要なライブラリを自動的にコンパイル、インストールするため、コマンド一つで容易にインストールすることが可能となっている。またIvyはPyPi (Python package index)への登録を予定しており、将来的にはソースコードのダウンロードも不要となり、コマンド一行のみで使用可能になる予定である。
+超並列シーケンスデータを用いたRNA編集サイトの検出には、現在二つの問題がある。一つ目は、高精度な検出のために解析が複雑化し、簡便かつ高速な解析が困難となっていることである。第\ref{bench}章の精度検証の対象となった検出手法もまたその例外ではなく、使用したソフトウェアや解析方法の詳細なパラメータに関しては、自然言語によって論文中では記述される。そのため、論文ごとに解析手法の記述には粒度の違いが見られ、完全な再現が困難な場合もある。こういった現状では、仮に先行研究ごとにシーケンスデータが公開されていたとしても、複雑な解析パイプラインを再現し、優れた手法を他のデータへ適用することや、追証実験を行い難いという問題を発生させる。二つ目の問題は、新規の検出手法によって編集サイトを検出した場合に、検出精度の検証方法がばらつき、手法やパラメータの影響についての比較検討が困難だということである。第2章では、検出手法の精度比較を主題とし、情報検索の分野で利用されてきた適合率や再現率の導入による解決方法の提案を試みたものであった。
 \par
-以下に、本研究によって開発されたシステムの設計を示した。
-\begin{figure}[htbp]
+本研究では、上記二つの問題を解決するため、超並列シーケンスデータを対象としたRNA編集サイトの高速かつ高精度な検出に加え、精度検証を行うソフトウェア・パッケージIvyの開発を目的として、研究を行った。Ivyはコマンドラインツールとして実装され、RNA編集サイトを検出するためのツールと精度検証を行うためのベンチマークツールが付属されたパッケージとなっている。尚、GNU GPLv3 (GNU General Public License version 3)の元、オープンソースのフリーウェアとして、\url{http://}において公開する予定である。
+\par
+結果、既存のソフトウェアならびに変異解析で用いられるソフトウェアよりも高速かつ低メモリで動作することが示された。
+
+\section{システムの設計}
+\subsection{動作環境}
+IvyはUnix環境で動作するコマンドラインツールとしてPython v2.7.5によって実装された。図\ref{fig:ivy_arch}には、Ivyシステムの設計の
+全体像を示した。Ivyのシステムは、オブジェクト指向プログラミングによる開発を取り入れており、適切なクラス設計によりユーザーとなる研究者からの追加機能の要望にも柔軟に対応できるような拡張性の高い実装を実現している。Ivyは、RNA編集サイトを検出するためのivyと、精度検証を行うためのedit\_benchの二つのコマンドラインツールが独立して動作する。
+\par
+Ivyの開発は、Mac OSX 10.9上のPython v.2.7.5で行われており、Python3およびそれ以下のバージョンでは動作試験は行っていない。Mac以外のUnix環境として、RedHat上での動作は確認している。ivyは、入力として受け取るアラインメントデータの処理にはPysam v0.7.5、VCF (Variant call format) \citep{Danecek:2011aa}の処理にはpyVCF v0.6.4、高速なフィッシャーの正確確率検定のためのfisher v0.1.4に依存する。edit\_bechは、図の生成にmatplotlib v1.4.1+に依存する。これらの依存関係は、インストール時に自動的に解決を試みる仕様だが、高速化のために一部のライブラリのインストールには、事前にCコンパイラを用意しておく必要がある。インストール自体はコマンド一つで簡便に行えるようになっているほか、PyPI (Python package index)への登録を予定しており、インストール時にソースコードのダウンロードも不要となる予定である。
+
+\subsection{ivyの実装}
+ivyは、ユーザーから与えられたRNA-seq/DNA-seqのアラインメントファイルと参照ゲノム配列、解析のパラメータを引数として受け取り、動作する。基本的な動作として、受け取った引数からリファレンスゲノムの配列と一塩基ごとにアラインメント結果を解析する。一塩基ごとのアラインメント情報の取得は、ストリーミングで処理され、各種のフィルタリング処理が行われる。設定されたフィルタリングを通過した最終的な候補サイトは、ファイルへと書き出され、ivyによる解析は終了する。以降では、詳細なivyのクラス設計と実装を概観してゆく。
+\par
+AlignmentStreamクラスは、入力されたバイナリ形式のアラインメントの情報が含まれるオブジェクトを一塩基ごとに読み出す中核的なクラスである。このように参照ゲノムの一塩基ごとにRNA-seq/DNA-seqのアラインメント結果へと変換する過程をpileupと呼び、pileupしたpysam.AlignedRead
+オブジェクトは、ショートリードの配列、リードの向きやクオリティ、参照ゲノムへの座標などアラインメント結果に関する多くの属性 (Attributes)を持つ。AlignmentStreamクラスはこれらの属性を参照しながら、委譲 (Deligation)されたAlignmentFilterクラスやAlignmentReadStatsクラスが、アラインメント結果のフィルタリングや統計的なバイアスのフィルタリングを行う実装を持つ。AlignmentStreamでのpileup処理は、数百MBから数十GBのアラインメントファイルを対象とするため、ヒトゲノムの解析では一番染色体へ限定的に解析したとしてもオブジェクトのサイズはメモリ空間を圧迫しかねない。そのため、AlignmentStream.pileup\_streamメソッドは、pileupした返り値をイテレータとする実装を持ち、
+省メモリでの解析を実現している。また、ivyはLoggerクラスを持ち、解析の各段階における累積時間、解析に使用された全オプション、発生した警告やエラーの出力などを制御している。ivyが期待と異なった動作をした場合には、Loggerクラスから出力された冗長なログが有用だと考えられる。デフォルトでログの出力レベルは最低限に抑えられており、必要に応じて有効にして使う実装とした。
+\par
+Ivyは、ヒト、マウス、ショウジョウバエといった高等真核生物を主要な解析対象種とした編集サイトの検出を実行する。原理的には、pileupをするためのメソッドコール数は、ゲノムサイズに完全に比例し、ゲノムサイズが大きな生物に対しては計算時間が増大することが予想される。そのため、複数のスレッドを使用した並列化が現実的な時間内での解析には必須だと考えた。ivyは、pythonの標準ライブラリを使用した並列処理を提供する。検出の高速化のために使用可能なスレッド数に応じ、自動的に染色体数を均等に分割し、編集サイトを検出する。RNA 編集サイトは、染色体をオーバーラップして起こる現象ではないため、染色体を分割することによるアラインメントデータの損失などの問題は起こらないと考えた。
+
+\subsection{edit\_benchの実装}
+edit-benchは、検出されたRNA編集サイトの精度検証を行うためのベンチマークツールとして開発された。精度検証には、第2章で用いた再現率、適合率およびF値を用いた。各指標については、第2章を参照されたい。
+\par
+edit-benchは大きく4つのクラスから実装され、Darnedから正解セットをHTTP通信により取得し、適切なCSVファイルにパースするGeneratorクラス、何らかの方法により検出されたRNA編集サイトのVCFファイルから、適切なデータ構造を生成と読み出しをするReaderクラス、精度検証のための各種指標を計算するBenchmarkクラス、精度の検証結果を図によって可視化するPlotクラスを持つ。Generatorクラスでは、初回起動のみ引数に与えられた生物種名に対応した正解セットをDarnedより取得する必要から時間を要するが、2回目以降はローカルにCSVファイルとしてキャッシュするため高速に動作する。
+Readerクラスは、ivyの出力であるVCF (Variant call format)を入力とし、データ構造に保存する他に、検出された編集サイトの個数などの情報を取得するメソッドを持つ。Benchmarkクラスは、Readerクラスによって生成されたデータ構造を利用して、精度検証の指標を計算する。Plotクラスは、再現率と適合率に関する二次元プロットを生成するクラスであり、図の描画は補助的な機能ではなく、精度検証の結果から手法の妥当性を直感的に判断することを可能にしている。この描画機能は、複数回ivyを実行し、最も精度のよいパラメータの組み合わせを得る場合に使用されることを想定する。また、検証を行うサンプル数が多い場合、ラベルの色分けが離散的であると色が飽和する問題があるが、サンプル数に応じてカラーマップから連続的な階調を自動生成することで回避した。描画された結果は、PDFファイルへと出力される。尚、図の生成にはmatplotlibパッケージに依存するが、他のクラスはPythonの組み込みライブラリのみで動作する。
+\begin{figure}[!h]
 	\begin{center}
-		\includegraphics[width=0.7 \hsize]{Ivy_arch.png}
+		\includegraphics[width=1 \hsize]{ivy_arc.pdf}
 	\end{center}
 	\vspace*{-1cm}
-	\caption{Ivyのシステム}
+	\caption{ソフトウェア・パッケージIvyの設計}
+	\label{fig:ivy_arch}
+	\begin{flushleft}
+		\small{設計されたIvyの全体像を示す。ここで示した全体像は、実装を簡略化して示している。矢印は、入力として受け取ったRNA-seq/DNA-seqデータと解析パラメータを受け取り、最終的にRNA編集サイトが検出されるまでの流れを示す。}
+	\end{flushleft}
 \end{figure}
 
-\subsection{データの入出力}
-\subsubsection{SAM/BAM形式による入力}
-超並列シーケンサーを用いた解析において、塩基配列データはFastqフォーマットが標準的な形式となっており、fastqデータを参照ゲノム配列にマッピングすることによって、SNPの検出や遺伝子発現量の定量、ゲノムのアセンブリなどが行われ、RNA editingサイトの検出も参照ゲノムへのマッピングが検出には必須である。このマッピングしたアラインメント結果を保持するデータ形式は、SAM/BAM形式が事実上の標準フォーマットとして広く用いられている。SAMは参照ゲノムへマッピングされたショートリードの座標情報やクオリティ情報などを保持しており、座標にインデックスを貼りgzipで圧縮したバイナリ形式をBAMと呼ぶ。SAMとBAMは相互に変換が可能である。Ivyは、入力には参照ゲノムにマッピングしたSAMもしくはBAMを入力フォーマットとした。
-
-\subsubsection{VCF形式による出力}
-Ivyによって検出されたA-to-I editingサイトは、VCF (variant call format)によって出力される。このVCFフォーマットは、SNPやSNVの検出といった変異解析に標準的に用いられているフォーマットを指し、1000 genomes projectなど国際プロジェクトでも採用されているデータ形式である。RNA editingサイトもSNPも本質的にはゲノムのある座標における一塩基置換として表現可能であるから、検出したRNA editingサイトもVCF形式で出力することが望ましいと考えた。VCFを出力フォーマットとする利点として、変異解析のために開発された他のミドルウェアを組み合わせた更なる解析が可能となる点である。SNP解析では検出したSNPそれぞれの遺伝子名やアミノ酸置換の有無などをAnnovarとったソフトウェアを用いてアノテーションする場合が多い。Ivyで出力された結果もまたVCFであるから、Annovarなど他のツールと連携させた下流解析を容易に行うことができるという利点を持つ。
+\subsection{入出力の形式}
+超並列シーケンサーを用いた解析において、塩基配列データはFastqフォーマットが標準的な形式となっており、Fastqデータを参照ゲノム配列にマッピングすることによって、SNPの検出や遺伝子発現量の定量、ゲノムのアセンブリなどが行われ、RNA 編集サイトの検出も参照ゲノムへのマッピングが検出には必須である。このマッピングしたアラインメント結果を保持するデータ形式は、SAM/BAM形式が事実上の標準フォーマットとして広く用いられている。SAMは参照ゲノムへマッピングされたショートリードの座標情報やクオリティ情報などを保持しており、座標にインデックスを貼りgzipで圧縮したバイナリ形式をBAMと呼ぶ。SAMとBAMは相互に変換が可能である。入力は、RNA-seq/DNA-seqリードをマッピングした結果から得られる BAM (Binary alignment/map format)形式である。
 \par
-以下に、VCFフォーマットによる結果の出力例を示す。
-
-\scriptsize
-\begin{verbatim}
-##fileformat=VCFv4.2
-##INFO=<ID=NS,Number=1,Type=Integer,Description="Number of Samples With Data">
-##FILTER=<ID=s50,Description="Less than 50% of samples have data">
-##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
-#CHROM POS   ID        REF ALT QUAL FILTER INFO                    FORMAT      NA00001        
-20     14370 rs6054257 G   A   29   PASS   NS=3;DP=14;AF=0.5;DB;H2 GT:GQ:DP:HQ 0|0:48:1:51,51 
-20     17330 .         T   A   3    q10    NS=3;DP=11;AF=0.017     GT:GQ:DP:HQ 0|0:49:3:58,50 
-\end{verbatim}
-\normalsize
-
-\subsection{並列化への対応}
-Ivyは、ヒト、マウス、ショウジョウバエといった高等真核生物をターゲットとしている。Ivyはゲノム全体についてeditingサイトの検出を実行するため、ゲノムサイズが大きな生物に対しては計算時間が増大することが想定され、複数のスレッド (CPU)を使用した並列化が高速な解析には必要となる。Ivyでは、検出の高速化のために使用可能なスレッド数に応じ、自動的に染色体数を均等に分割し、並列的にeditingサイトを検出する並列処理をサポートしている。RNA editingサイトは、染色体をまたいで起こる現象ではないため、染色体を分割することによるアラインメントデータの損失などの問題は起こらないと考えられた。
+入力されたBAMファイルは、Pysam (Python interface for the SAM/BAM sequence alignment and mapping format)ライブラリを使用して、リファレンスゲノムへのアラインメント結果の取得に用いている。Pysamは、C言語で書かれたBAMのパーサーライブラリ (Samtools C API)のラッパーであり、内部では直接C言語のAPIを呼び出しているため高速にアラインメント情報を取得可能である。そのため、本ソフトウェア・パッケージでもpysamをメインのライブラリとして使用した。
+\par
+Ivyによって検出されたA-to-I 編集サイトは、VCF v4.1によって出力される。このVCFフォーマットは、SNPやSNVの検出といった変異解析に標準的に用いられているフォーマットを指し、1000 genomes project など国際プロジェクトでも採用されているデータ形式である。RNA 編集サイトもSNPも本質的にはゲノムのある座標における一塩基置換として表現可能であるから、検出したRNA 編集サイトもVCF形式で出力することが望ましいと考えた。VCFを出力フォーマットとする利点として、変異解析のために開発された他のミドルウェアを組み合わせた更なる解析が可能となる点である。SNP解析では検出したSNPそれぞれの遺伝子名やアミノ酸置換の有無などをAnnovar \citep{Wang:2010aa}とったソフトウェアを用いてアノテーションする場合が多い。Ivyで出力された結果もまたVCFであるから、Annovarなど他のツールと連携させた下流解析を容易に行うことができるという利点を持つ。
 
 \subsection{ユーザーインターフェース}
-Ivyパッケージに同梱されるivyコマンドはRNA editingサイトの検出ソフトウェアであり、edit\_benchは検出したeditingサイトの精度検証を行うことのできるベンチマークツールである。
-ivyのインターフェースは以下のようになっており、同梱されているサンプルデータを用いて解析を簡易的に試すことができるようになっている。
-\par
-Ivyパッケージは、以下のコマンドで容易にインストールすることが可能となっている。
+Ivyパッケージは、以下のコマンドで容易にインストールすることが可能となっている。ivyのインターフェースは以下のようになっており、同梱されているサンプルデータを用いて解析を簡易的に試すことができるようになっている。
 \begin{itembox}[l]{Ivyのインストール}
 	\begin{verbatim}
-		#最新版のソースコードの取得
-		$ git clone git@github.com:soh-i/Ivy.git 
-		#パッケージのインストール
+		# 最新版のソースコードの取得
+		$ curl https://github.com/soh-i/Ivy/archive/master.zip
+		# パッケージのインストール
 		$ python setup.py install
 	\end{verbatim}
 \end{itembox}
 
-edit\_benchは、以下のように使うことが出来る。
-\begin{itembox}[l]{ivyのインターフェース}
+\subsubsection{ivyコマンドのインターフェース}
+\begin{itembox}[l]{\url{ivy}コマンドのインターフェース}
 	\begin{verbatim}
-		$ ivy -f reference.fa -r dna.bam --rm-duplicated-read --insertion-read
+		# ヘルプの表示
+		$ ivy --help
+		# 最も基本的な解析
+		$ ivy -f human_hg19.fa -r sample_rna.bam -d sample_dna.bam
 	\end{verbatim}
 \end{itembox}
 
+\subsubsection{edit\_benchコマンドのインターフェース}
+edit\_benchは、以下のようなインターフェースから使用可能である。入力には、検出した編集サイトが記述されたVCFファイルの他に、対応する生物種とそのゲノムバージョンを与えると実行可能である。
 \par
-
-edit\_benchは、以下のように使うことが出来る。
-
-\begin{itembox}[l]{edit\_benchのインターフェース}
+示した例では、他に\url{--plot}オプションで結果を図として描画する機能を有効にし、
+\url{--log}で保存するファイルを指定している。CSV形式で保存される他、カラムのスキーマなどは付録を参照されたい。尚、このオプションが指定されない場合には、標準出力に結果は出力される。\url{--source}オプションは、Darnedのデータセットから特定のセルラインや組織に限ったサブセットを生成し、それを正解セットとした精度検証を可能にする。デフォルトでは、この機能は無効になっており、Darnedの全ての編集サイトを対象に、精度検証の指標は計算される。以下、edit\_benchコマンドのインターフェースと簡単な解析例を示す。
+\par
+\begin{itembox}[l]{\url{edit_bench}コマンドのインターフェース}
 	\begin{verbatim}
-		#基本的な使い方
+		# 基本的な使い方
 		$ edit_bench --vcf test.vcf --sp human_hg19 --plot --log bench.log
-
-		#正解セットのカスタマイズ
-		$ edit_bench --vcf test.vcf --sp human_hg19 --source brain \\ 
+		# 正解セットを脳のサンプルに限定する
+		$ edit_bench --vcf test.vcf --sp human_hg19 --source brain  
 		  --log bench.log
 	\end{verbatim}
 \end{itembox}
 
+\newpage
+
 \section{本手法の性能評価}
 \subsection{性能評価に用いたRNA-seqデータ}
+\subsubsection{ヒト}
+
+\begin{longtable}{cccc}
+	\vspace{-0.5cm}
+	\label{tab:darned}\\
+	\caption{PMID: 21960545 ヒトのデータ}\\
+	\cline{1-4}
+	\textbf{Sample} & \textbf{GSM ID} & \textbf{Cell line} & \textbf{Tissue} \\
+	\cline{1-4}
+	u87\_adar\_ctrl & GSM693746 & U87MG & Glioblastoma \\
+	u87\_adar\_kd & GSM693747 & U87MG & Glioblastoma \\
+	\cline{1-4}
+	\vspace{-0.8cm}
+\end{longtable}
+\begin{flushleft}
+	\small{Accurate identification of A-to-I RNA editing in human by transcriptome sequencing}
+\end{flushleft}
+
+\subsubsection{マウス}
+\subsubsection{ショウジョウバエ}
+\subsubsection{線虫}
+\begin{longtable}{cccc}
+	\vspace{-0.5cm}
+	\label{tab:darned}\\
+	\caption{PMID: 22673872 線虫のデータ}\\
+	\cline{1-4}
+	\textbf{Sample} & \textbf{GSM ID} & \textbf{Strain} & \textbf{Tissue} \\
+	\cline{1-4}
+	Wild-type small RNA rep1 & GSM715830 & Wild-type (N2) & Whole worm \\
+	Wild-type small RNA rep2& GSM715831 & Wild-type (N2) & Whole worm \\
+	Adar1-mutant small RNAs & GSM715832 & adr-1 (tm668) & Whole worm \\
+	Adar2-mutant small RNAs & GSM715833  & adr-2 (ok735) & Whole worm \\
+	Adar-1 and Adar-2 mutant small RNAs　& GSM715834 & adr-1;adr-2 (tm668;ok735) & Whole worm \\
+	\cline{1-4}
+	\vspace{-0.8cm}
+\end{longtable}
+\begin{flushleft}
+	\small{Effects of ADARs on small RNA processing pathways in \textit{C. elegans}.}
+\end{flushleft}
+
 \subsection{使用したパラメータ}
+
 \subsection{性能評価の結果}
-\subsection{実データを用いたRNA editingサイトの解析}
+\subsubsection{メモリ使用効率}
+\begin{figure}[!h]
+	\begin{center}
+		\includegraphics[width=0.7 \hsize]{ivy_memory.png}
+	\end{center}
+	\caption{メモリの使用効率のベンチマーク}
+	\begin{flushleft}
+		\small{Ivy、REDItools、samtoolsで比較した。}
+	\end{flushleft}
+	\label{fig:f_measure}
+\end{figure}
+
+\subsubsection{解析に要する累積時間}
+\begin{figure}[!h]
+	\begin{center}
+		\includegraphics[width=0.7 \hsize]{ivy_time.png}
+	\end{center}
+	\caption{解析時間のベンチマーク (dummy data)}
+	\begin{flushleft}
+		\small{Ivy、REDItools、samtoolsで比較した。}
+	\end{flushleft}
+	\label{fig:f_measure}
+\end{figure}
+
+\subsection{Ivyの検出精度}
+\subsubsection{適合率・再現率による検証}
+
+\subsection{実データを用いたRNA 編集サイトの解析}
+\begin{figure}[!ht]
+	\begin{center}
+		\includegraphics[width=0.5 \hsize]{overlap.png}
+	\end{center}
+	\caption{追証実験}
+	\begin{flushleft}
+		\small{追証実験による編集サイトの一致と不一致をそれぞれ表す。}
+	\end{flushleft}
+	\label{fig:overlap}
+\end{figure}
+
+\newpage
 
 \section{議論}
-\subsection{本手法により同定されたeditingサイト}
+\subsection{本手法により同定された編集サイト}
 \subsection{本手法の有用性}
