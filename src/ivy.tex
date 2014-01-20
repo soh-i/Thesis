@@ -1,178 +1,275 @@
-\chapter{ソフトウェア・パッケージIvyの開発}
+\chapter{RNA編集サイトの検出ソフトウェアの開発}
 \section{研究背景}
-RNA-seqデータを対象としたRNA編集サイトの検出ソフトウェアは、REDITools \citep{Picardi:2013aa}一つの実装に限られている。そのため、SNPやSNVをDNA-seqデータから検出する変異解析用のソフトウェアとして開発されているsamtools mpileup \citep{Li:2009aa}、GATK \citep{McKenna:2010aa}、SOAPsnp \citep{Yu:2013aa}転用した研究例も複数がある \citep{Danecek:2012aa, Chen:2012aa, Sanjana:2012aa, Peng:2012aa}。これは、RNA編集サイトもSNP/SNVの検出も本質的にはショートリードのマッピング結果からゲノム配列との一塩基変異を検出することにほかならないからである。しかしながら、DNA-seqとRNA-seqのアラインメント結果を観察すると、一般にRNA-seqデータはDNA-seqに対して数百倍の変異箇所が見られる。これは、第1章や2章で述べたように、RNA分子の不安定性や複数のマッピングバイアスが影響しているからである。こういった現状において、一つのソフトウェアでRNA編集サイトの検出が完結した例はこれまでにない。一般的には、実験で得られたRNA-seqデータを参照ゲノム配列へ適切なパラメータでマッピングし、そのアラインメントについて数個から多い時には20以上のフィルタリングを通し、最終的にそれらのフィルタリングを通過した箇所をRNA編集サイトとしてリストする、という方法が取られる。変異解析のソフトウェアを用いた場合でも、下流解析では独自のフィルタリング過程を必ず設け、擬陽性を減少させる工夫が行われている。そのため、必然的に情報解析のワークフローは複数のフィルタリングと条件分岐によって複雑化する。
+現在、RNA-seqデータを対象としたRNA編集サイトの検出ソフトウェアは、REDItools \citep{Picardi:2013aa}の一つの実装に限られている。そのため、編集サイトの検出にはSNPやSNVをDNA-seqデータから検出する変異解析用のソフトウェアとして開発されたSAMtools mpileup \citep{Li:2009aa}やGATK \citep{McKenna:2010aa}、SOAPsnp \citep{Yu:2013aa}を転用した研究例も複数ある \citep{Danecek:2012aa, Chen:2012aa, Sanjana:2012aa, Peng:2012aa}。流用を可能にしているのは、RNA編集サイトもSNP/SNVの検出も本質的にはショートリードのマッピング結果から参照ゲノム配列との一塩基ミスマッチを検出することにほかならないからである。しかしながら、DNA-seqとRNA-seqのアラインメント結果を観察すると、一般にRNA-seqデータはDNA-seqに対して数百倍の変異箇所が見られる。これらの多くは、ADARなど生物学的な事象を背景にした塩基修飾ではなく、RNA分子の不安定性や複数のマッピングバイアスなどを原因とした技術的なエラーである。
 \par
-超並列シーケンスデータを用いたRNA編集サイトの検出には、現在二つの問題がある。一つ目は、高精度な検出のために解析が複雑化し、簡便かつ高速な解析が困難となっていることである。第\ref{bench}章の精度検証の対象となった検出手法もまたその例外ではなく、使用したソフトウェアや解析方法の詳細なパラメータに関しては、自然言語によって論文中では記述される。そのため、論文ごとに解析手法の記述には粒度の違いが見られ、完全な再現が困難な場合もある。こういった現状では、仮に先行研究ごとにシーケンスデータが公開されていたとしても、複雑な解析パイプラインを再現し、優れた手法を他のデータへ適用することや、追証実験を行い難いという問題を発生させる。二つ目の問題は、新規の検出手法によって編集サイトを検出した場合に、検出精度の検証方法がばらつき、手法やパラメータの影響についての比較検討が困難だということである。第2章では、検出手法の精度比較を主題とし、情報検索の分野で利用されてきた適合率や再現率の導入による解決方法の提案を試みたものであった。
+こういった現状において、一つのソフトウェアでRNA編集サイトの検出が完結した例はこれまでになく、実験で得られたRNA-seqデータを参照ゲノム配列へ適切なパラメータでマッピングし、そのアラインメントについて数個から多い時には20以上のフィルタリングを通し、最終的に通過した箇所をRNA編集サイトとしてリストするという方法が用いられる。変異解析のソフトウェアを用いた場合でも、下流解析では独自のフィルタリング過程をほぼ必ず設けており、擬陽性を減少させる工夫が行われている。そのため、必然的に情報解析のワークフローは複数のフィルタリングと条件分岐によって複雑化する。
 \par
-本研究では、上記二つの問題を解決するため、超並列シーケンスデータを対象としたRNA編集サイトの高速かつ高精度な検出に加え、精度検証を行うソフトウェア・パッケージIvyの開発を目的として、研究を行った。Ivyはコマンドラインツールとして実装され、RNA編集サイトを検出するためのツールと精度検証を行うためのベンチマークツールが付属されたパッケージとなっている。尚、GNU GPLv3 (GNU General Public License version 3)の元、オープンソースのフリーウェアとして、\url{http://}において公開する予定である。
+超並列シーケンスデータを用いたRNA編集サイトの検出には、現在二つの問題がある。一つ目は、高精度な検出のために解析が複雑化し、簡便かつ高速な解析が困難となっていることである。使用したソフトウェアや解析方法の詳細なパラメータに関しては、論文中に記述されるため、論文ごとに解析手法の記述には粒度の違いが見られ、完全な再現が困難な場合もある。こういった現状では、仮に先行研究ごとにシーケンスデータが公開されていたとしても、複雑な解析パイプラインを再現し、優れた手法を他のデータへ適用することや、追証実験を行い難いという問題を発生させる。二つ目の問題は、新規の検出手法によって編集サイトを検出した場合に、検出精度の検証方法がばらつき、手法やパラメータの影響についての比較検討が困難だということである。本卒業論文の第2章では、検出手法の精度比較を主題とし、情報検索の分野で利用されてきた適合率や再現率の導入による解決方法の提案を試みたものであった。
 \par
-結果、既存のソフトウェアならびに変異解析で用いられるソフトウェアよりも高速かつ低メモリで動作することが示された。
+本研究では、上記二つの問題を解決するため、超並列シーケンスデータを対象としたRNA編集サイトの高速かつ高精度な検出に加え、精度検証を行うソフトウェア・パッケージIvyの開発を行った。Ivyはコマンドラインツールとして実装され、RNA編集サイトを検出するためのツールと精度検証を行うためのベンチマークツールが付属する。Ivyは、GNU GPLv3 (GNU General Public License version 3)の元、オープンソースのフリーウェアとして、GitHubの\url{https://github.com/soh-i/Ivy}においてソースコードを公開している。
 
 \section{システムの設計}
 \subsection{動作環境}
-IvyはUnix環境で動作するコマンドラインツールとしてPython v2.7.5によって実装された。図\ref{fig:ivy_arch}には、Ivyシステムの設計の
-全体像を示した。Ivyのシステムは、オブジェクト指向プログラミングによる開発を取り入れており、適切なクラス設計によりユーザーとなる研究者からの追加機能の要望にも柔軟に対応できるような拡張性の高い実装を実現している。Ivyは、RNA編集サイトを検出するためのivyと、精度検証を行うためのedit\_benchの二つのコマンドラインツールが独立して動作する。
+IvyはUnix環境で動作するコマンドラインツールとしてPython v2.7.5によって実装された。図\ref{fig:Ivy_arch}には、Ivyシステムの設計の全体像を示した。Ivyは、オブジェクト指向プログラミングによる開発手法を取り入れており、適切なクラス設計によりユーザーとなる研究者からの追加機能の要望にも柔軟に対応できるような拡張性の高い実装を実現している。Ivyは、RNA編集サイトを検出するためのIvyと、精度検証を行うためのedit\_benchの二つのコマンドラインツールが付属するパッケージである。
 \par
-Ivyの開発は、Mac OSX 10.9上のPython v.2.7.5で行われており、Python3およびそれ以下のバージョンでは動作試験は行っていない。Mac以外のUnix環境として、RedHat上での動作は確認している。ivyは、入力として受け取るアラインメントデータの処理にはPysam v0.7.5、VCF (Variant call format) \citep{Danecek:2011aa}の処理にはpyVCF v0.6.4、高速なフィッシャーの正確確率検定のためのfisher v0.1.4に依存する。edit\_bechは、図の生成にmatplotlib v1.4.1+に依存する。これらの依存関係は、インストール時に自動的に解決を試みる仕様だが、高速化のために一部のライブラリのインストールには、事前にCコンパイラを用意しておく必要がある。インストール自体はコマンド一つで簡便に行えるようになっているほか、PyPI (Python package index)への登録を予定しており、インストール時にソースコードのダウンロードも不要となる予定である。
+Ivyの開発は、Mac OSX 10.9上のPython v.2.7.5で行われており、Python3およびそれ以下のバージョンでは動作試験は行っていない。Mac以外のUnix環境として、RHEL (Red Hat Enterprise Linux)上での動作は確認している。Ivyは、複数のC言語およびPythonによって書かれたライブラリに依存している。入力として受け取るアラインメントデータの処理にはPysam v0.7.7、VCF (Variant call format) \citep{Danecek:2011aa}の処理にはpyVCF v0.6.4、フィッシャーの正確確率検定にはfisher v0.1.4に依存する。edit\_bechは、図の生成にmatplotlib v1.4.1+に依存する。これらの依存関係は、インストール時に自動的に解決を試みる仕様だが、高速化のために一部のライブラリのインストールには、事前にgccやclangなどCコンパイラを用意しておく必要がある。インストール自体はコマンド一つで簡便に行えるようになっているほか、PyPI (Python package index)への登録を予定しており、インストール時にソースコードのダウンロードも不要となる予定である。
 
-\subsection{ivyの実装}
-ivyは、ユーザーから与えられたRNA-seq/DNA-seqのアラインメントファイルと参照ゲノム配列、解析のパラメータを引数として受け取り、動作する。基本的な動作として、受け取った引数からリファレンスゲノムの配列と一塩基ごとにアラインメント結果を解析する。一塩基ごとのアラインメント情報の取得は、ストリーミングで処理され、各種のフィルタリング処理が行われる。設定されたフィルタリングを通過した最終的な候補サイトは、ファイルへと書き出され、ivyによる解析は終了する。以降では、詳細なivyのクラス設計と実装を概観してゆく。
+\subsection{Ivyの設計と実装}
+Ivyは、ユーザーから与えられたRNA-seq/DNA-seqのアラインメントファイルと参照ゲノム配列を解析のパラメータを引数として受け取り、動作する。基本的な動作として、受け取った引数から参照ゲノム配列の一塩基ごとにアラインメント結果を解析する。一塩基ごとのアラインメント情報の取得は、ストリーミングで処理され、各種のフィルタリング処理が行われる。設定されたフィルタリングを通過した最終的な候補サイトは、VCFファイルへと書き出され、Ivyによる計算は終了する。以降では、詳細なIvyのクラス設計と実装を概観してゆく。
 \par
 AlignmentStreamクラスは、入力されたバイナリ形式のアラインメントの情報が含まれるオブジェクトを一塩基ごとに読み出す中核的なクラスである。このように参照ゲノムの一塩基ごとにRNA-seq/DNA-seqのアラインメント結果へと変換する過程をpileupと呼び、pileupしたpysam.AlignedRead
-オブジェクトは、ショートリードの配列、リードの向きやクオリティ、参照ゲノムへの座標などアラインメント結果に関する多くの属性 (Attributes)を持つ。AlignmentStreamクラスはこれらの属性を参照しながら、委譲 (Deligation)されたAlignmentFilterクラスやAlignmentReadStatsクラスが、アラインメント結果のフィルタリングや統計的なバイアスのフィルタリングを行う実装を持つ。AlignmentStreamでのpileup処理は、数百MBから数十GBのアラインメントファイルを対象とするため、ヒトゲノムの解析では一番染色体へ限定的に解析したとしてもオブジェクトのサイズはメモリ空間を圧迫しかねない。そのため、AlignmentStream.pileup\_streamメソッドは、pileupした返り値をイテレータとする実装を持ち、
-省メモリでの解析を実現している。また、ivyはLoggerクラスを持ち、解析の各段階における累積時間、解析に使用された全オプション、発生した警告やエラーの出力などを制御している。ivyが期待と異なった動作をした場合には、Loggerクラスから出力された冗長なログが有用だと考えられる。デフォルトでログの出力レベルは最低限に抑えられており、必要に応じて有効にして使う実装とした。
+オブジェクトは、ショートリードの配列、リードの向きやクオリティ、参照ゲノムへの座標などアラインメント結果に関する多くの属性 (Attributes)を持つ。AlignmentStreamクラスはこれらの属性を参照しながら、委譲 (Deligation)されたAlignmentFilterクラスやAlignmentReadStatsクラスが、アラインメント結果のフィルタリングや統計的なバイアスのフィルタリングを行う実装を持つ。AlignmentStreamでのpileup処理は、数百MBから数十GBのアラインメントファイルを対象とするため、ヒトゲノムの解析では一番染色体へ限定的に解析したとしてもオブジェクトのサイズはメモリ空間を圧迫しかねない。そのため、AlignmentStream.pileup\_streamメソッドは、pileupした返り値をイテレータとする実装を持ち、省メモリでの解析を実現している。また、IvyはLoggerクラスを持ち、解析の各段階における累積時間、解析に使用された全オプション、発生した警告やエラーの出力などを制御している。Ivyが期待と異なった動作をした場合には、Loggerクラスから出力された冗長なログが有用だと考えられる。デフォルトでログの出力レベルは最低限に抑えられており、必要に応じて有効にして使う実装とした。
 \par
-Ivyは、ヒト、マウス、ショウジョウバエといった高等真核生物を主要な解析対象種とした編集サイトの検出を実行する。原理的には、pileupをするためのメソッドコール数は、ゲノムサイズに完全に比例し、ゲノムサイズが大きな生物に対しては計算時間が増大することが予想される。そのため、複数のスレッドを使用した並列化が現実的な時間内での解析には必須だと考えた。ivyは、pythonの標準ライブラリを使用した並列処理を提供する。検出の高速化のために使用可能なスレッド数に応じ、自動的に染色体数を均等に分割し、編集サイトを検出する。RNA 編集サイトは、染色体をオーバーラップして起こる現象ではないため、染色体を分割することによるアラインメントデータの損失などの問題は起こらないと考えた。
+Ivyは、ヒト、マウス、ショウジョウバエといった高等真核生物を主要な解析対象種とした編集サイトの検出を実行する。原理的には、pileupをするためのメソッドコール数は、ゲノムサイズに比例し、ゲノムサイズが大きな生物に対しては計算時間が増大することが予想される。そのため、複数のスレッドを使用した並列化が現実的な時間内での解析には必須だと考えた。Ivyは、pythonの標準ライブラリを使用した並列処理を提供する。検出の高速化のために使用可能なスレッド数に応じ、自動的に染色体数を均等に分割し、編集サイトを検出する。RNA編集サイトは、染色体をオーバーラップして起こる現象ではないため、染色体を分割することによるアラインメントデータの損失などの問題は起こらないと考えた。
+\par
+Ivyは、生物種、セルライン、シーケンシング手法、実験デザインなどの各種条件が異なるアラインメントデータが入力されることが想定される。こうったデータ生成プロセスに多様なバックグラウンドを持つデータに対応するため、可能な限りフィルタリングのオプションを提供し、多様なオプションとパラメータによる解析を可能とする実装を目指した。こういった複雑なオプションやパラメータを取る解析ツールは、簡便性と背反することが想定されるが、Ivyではフィルタリングのオプションを複数のクラスに分類する実装を持つことで回避している。加えて、各クラスに分類されているオプションは、先行研究を参考にしたデフォルトの値が設定されているため、重複リードやINDELリードの排除など基本的なオプションを改めて設定する必要はない。
+\par
+基本的なフィルタリングクラス (BasicFilter)では、入力されたRNA-seq/DNA-seqデータに対して、リードカバレッジや塩基のクオリティ、アレル頻度、許容するミスマッチの種類などの基本的なフィルタリングを提供する。統計的なフィルタリングクラス (StatisticalFilter)は、positional biasやstrand biasなどの統計的なアラインメントデータへのフィルタリング手法を提供する。SampleFilterクラスは、実験デザインに関するオプションを提供する。Strand-specific RNA-seqや\textit{Adar}のノックダウンのRNA-seqなどの入力に対応している。
+
+\begin{longtable}{ccc}
+	\vspace{-0.5cm}
+	\label{tab:darned}\\
+	\caption{Ivyに実装された入力データへのフィルタリング手法の一覧}\\
+	\cline{1-3}
+	\textbf{Option name} & \textbf{Description} & \textbf{Default value}\\
+	\textbf{Basic filter class} \\
+	\cline{1-3}
+	\textit{--min-mutation-frequency} & Minimum allele frequency & 0.1 \\
+	\textit{--min-rna-coverage} & Minimum RNA-seq read coverage & 10 \\
+	\textit{--min-dna-coverage} & Minimum DNA-seq read coverage	& 20\\
+	\textit{--rm-duplicated-read} & Remove duplicated mapped read & True \\
+	\textit{--rm-deletion-read} & Remove deletion reads & True\\
+	\textit{--rm-insertion-read} & Remove insertion reads & True\\
+	\textit{--min-rna-map} & Minimum mapping quality of RNA-seq data & 30\\
+	\textit{--min-dna-mapq} & Minimum mapping quality of DNA-seq data & 30\\
+	\textit{--min-rna-baq} & Minimum phread-scaled base call quality in RNA-seq reads & 28\\
+	\textit{--min-dna-baq} &Minimum phread-scaled base call quality in DNA-seq reads & 28\\
+	\textit{--num-allow-type} & Number of allowing base modification type(s) & 1\\
+	\textbf{Statistical filter class} \\
+	\cline{1-3}
+	\textit{--sig-level} & Significance level for statistical testing & 0.05\\
+	\textit{--base-call-bias} & Considering base call bias & False\\
+	\textit{--strand-bias} & Considering strand bias & False\\
+	\textit{--positional-bias} & Considering positional bias & False\\
+	\textbf{Sample filter class} \\
+	\cline{1-3}
+	\textit{--strand} & Use strand-specific RNA-seq data & False\\
+	\textit{--replicate} & Considering biological replicates & False\\
+	\textit{--adar-null} & Filter by Adar-null strain data & False\\
+	\cline{1-3}
+	\vspace{-0.8cm}
+\end{longtable}
+\begin{flushleft}
+	\small{フィルタリング手法の一覧を示す。実行時に与えるオプション名とその説明、デフォルト値をそれぞれ示す。}
+\end{flushleft}
 
 \subsection{edit\_benchの実装}
-edit-benchは、検出されたRNA編集サイトの精度検証を行うためのベンチマークツールとして開発された。精度検証には、第2章で用いた再現率、適合率およびF値を用いた。各指標については、第2章を参照されたい。
+edit\_benchは、検出されたRNA編集サイトの精度検証を行うためのベンチマークツールとして開発された。精度検証には、第2章で用いた再現率、適合率およびF値を用いた。各指標については、第2章を参照されたい。
 \par
-edit-benchは大きく4つのクラスから実装され、Darnedから正解セットをHTTP通信により取得し、適切なCSVファイルにパースするGeneratorクラス、何らかの方法により検出されたRNA編集サイトのVCFファイルから、適切なデータ構造を生成と読み出しをするReaderクラス、精度検証のための各種指標を計算するBenchmarkクラス、精度の検証結果を図によって可視化するPlotクラスを持つ。Generatorクラスでは、初回起動のみ引数に与えられた生物種名に対応した正解セットをDarnedより取得する必要から時間を要するが、2回目以降はローカルにCSVファイルとしてキャッシュするため高速に動作する。
-Readerクラスは、ivyの出力であるVCF (Variant call format)を入力とし、データ構造に保存する他に、検出された編集サイトの個数などの情報を取得するメソッドを持つ。Benchmarkクラスは、Readerクラスによって生成されたデータ構造を利用して、精度検証の指標を計算する。Plotクラスは、再現率と適合率に関する二次元プロットを生成するクラスであり、図の描画は補助的な機能ではなく、精度検証の結果から手法の妥当性を直感的に判断することを可能にしている。この描画機能は、複数回ivyを実行し、最も精度のよいパラメータの組み合わせを得る場合に使用されることを想定する。また、検証を行うサンプル数が多い場合、ラベルの色分けが離散的であると色が飽和する問題があるが、サンプル数に応じてカラーマップから連続的な階調を自動生成することで回避した。描画された結果は、PDFファイルへと出力される。尚、図の生成にはmatplotlibパッケージに依存するが、他のクラスはPythonの組み込みライブラリのみで動作する。
+edit\_benchは大きく4つのクラスから実装され、DARNEDから正解セットをHTTP通信により取得し、適切なCSVファイルにパースするGeneratorクラス、何らかの方法により検出されたRNA編集サイトのVCFファイルから、適切なデータ構造を生成と読み出しをするReaderクラス、精度検証のための各種指標を計算するBenchmarkクラス、精度の検証結果を図によって可視化するPlotクラスを持つ。
+\par
+Generatorクラスでは、初回起動のみ引数に与えられた生物種名に対応した正解セットをDARNEDより取得する必要から時間を要するが、2回目以降はローカルにCSVファイルとしてキャッシュするため高速に動作する。Readerクラスは、Ivyの出力であるVCFを入力とし、データ構造に保存する他に、検出された編集サイトの個数などの情報を取得するメソッドを持つ。Benchmarkクラスは、Readerクラスによって生成されたデータ構造を利用して、精度検証の指標を計算する。Plotクラスは、再現率と適合率に関する二次元プロットを生成するクラスであり、図の描画は補助的な機能ではなく、精度検証の結果から手法の妥当性を直感的に判断することを可能にしている。この描画機能は、複数回Ivyを実行し、最も精度のよいパラメータの組み合わせを得る場合に使用されることを想定する。また、検証を行うサンプル数が多い場合、ラベルの色分けが離散的であると色が飽和する問題があるが、サンプル数に応じてカラーマップから連続的な階調を自動生成することで回避した。描画された結果は、PDFファイルへと出力される。尚、図の生成にはmatplotlibパッケージに依存するが、他のクラスはPythonの組み込みライブラリのみで動作する。
 \begin{figure}[!h]
 	\begin{center}
-		\includegraphics[width=1 \hsize]{ivy_arc.pdf}
+		\includegraphics[width=1 \hsize]{Ivy_arc.pdf}
 	\end{center}
 	\vspace*{-1cm}
 	\caption{ソフトウェア・パッケージIvyの設計}
-	\label{fig:ivy_arch}
+	\label{fig:Ivy_arch}
 	\begin{flushleft}
 		\small{設計されたIvyの全体像を示す。ここで示した全体像は、実装を簡略化して示している。矢印は、入力として受け取ったRNA-seq/DNA-seqデータと解析パラメータを受け取り、最終的にRNA編集サイトが検出されるまでの流れを示す。}
 	\end{flushleft}
 \end{figure}
 
 \subsection{入出力の形式}
-超並列シーケンサーを用いた解析において、塩基配列データはFastqフォーマットが標準的な形式となっており、Fastqデータを参照ゲノム配列にマッピングすることによって、SNPの検出や遺伝子発現量の定量、ゲノムのアセンブリなどが行われ、RNA 編集サイトの検出も参照ゲノムへのマッピングが検出には必須である。このマッピングしたアラインメント結果を保持するデータ形式は、SAM/BAM形式が事実上の標準フォーマットとして広く用いられている。SAMは参照ゲノムへマッピングされたショートリードの座標情報やクオリティ情報などを保持しており、座標にインデックスを貼りgzipで圧縮したバイナリ形式をBAMと呼ぶ。SAMとBAMは相互に変換が可能である。入力は、RNA-seq/DNA-seqリードをマッピングした結果から得られる BAM (Binary alignment/map format)形式である。
+超並列シーケンサーを用いた解析において、塩基配列データはFastqフォーマットが標準的な形式となっており、Fastqデータを参照ゲノム配列にマッピングすることによって、SNPの検出や遺伝子発現量の定量、ゲノムのアセンブリなどが行われ、RNA編集サイトの検出も参照ゲノムへのマッピングが検出には必須である。このマッピングしたアラインメント結果を保持するデータ形式は、SAM/BAM形式が事実上の標準フォーマットとして広く用いられている。SAMは参照ゲノムへマッピングされたショートリードの座標情報やクオリティ情報などを保持しており、座標にインデックスを貼りgzipで圧縮したバイナリ形式をBAMと呼ぶ。SAMとBAMは相互に変換が可能である。入力は、RNA-seq/DNA-seqリードをマッピングした結果から得られるBAM (Binary alignment/map format)形式である。
 \par
-入力されたBAMファイルは、Pysam (Python interface for the SAM/BAM sequence alignment and mapping format)ライブラリを使用して、リファレンスゲノムへのアラインメント結果の取得に用いている。Pysamは、C言語で書かれたBAMのパーサーライブラリ (Samtools C API)のラッパーであり、内部では直接C言語のAPIを呼び出しているため高速にアラインメント情報を取得可能である。そのため、本ソフトウェア・パッケージでもpysamをメインのライブラリとして使用した。
+入力されたBAMファイルは、Pysam (Python interface for the SAM/BAM sequence alignment and mapping format)ライブラリを使用して、リファレンスゲノムへのアラインメント結果の取得に用いている。Pysamは、C言語で書かれたBAMのパーサーライブラリ (SAMtools C API)のラッパーであり、内部では直接C言語のAPIを呼び出しているため高速にアラインメント情報を取得可能である。そのため、本ソフトウェア・パッケージでもpysamをメインのライブラリとして使用した。
 \par
-Ivyによって検出されたA-to-I 編集サイトは、VCF v4.1によって出力される。このVCFフォーマットは、SNPやSNVの検出といった変異解析に標準的に用いられているフォーマットを指し、1000 genomes project など国際プロジェクトでも採用されているデータ形式である。RNA 編集サイトもSNPも本質的にはゲノムのある座標における一塩基置換として表現可能であるから、検出したRNA 編集サイトもVCF形式で出力することが望ましいと考えた。VCFを出力フォーマットとする利点として、変異解析のために開発された他のミドルウェアを組み合わせた更なる解析が可能となる点である。SNP解析では検出したSNPそれぞれの遺伝子名やアミノ酸置換の有無などをAnnovar \citep{Wang:2010aa}とったソフトウェアを用いてアノテーションする場合が多い。Ivyで出力された結果もまたVCFであるから、Annovarなど他のツールと連携させた下流解析を容易に行うことができるという利点を持つ。
+Ivyによって検出されたA-to-I 編集サイトは、VCF v4.1によって出力される。このVCFフォーマットは、SNPやSNVの検出といった変異解析に標準的に用いられているフォーマットを指し、1000 genomes project など国際プロジェクトでも採用されているデータ形式である。RNA編集サイトもSNPも本質的にはゲノムのある座標における一塩基置換として表現可能であるから、検出したRNA 編集サイトもVCF形式で出力することが望ましいと考えた。VCFを出力フォーマットとする利点として、変異解析のために開発された他のミドルウェアを組み合わせた更なる解析が可能となる点である。SNP解析では検出したSNPそれぞれの遺伝子名やアミノ酸置換の有無などをAnnovar \citep{Wang:2010aa}とったソフトウェアを用いてアノテーションする場合が多い。Ivyで出力された結果もまたVCFであるから、Annovarなど他のツールと連携させた下流解析を容易に行うことができるという利点を持つ。REDItoolsは、独自のタブ区切りテキストを出力とする。
 
 \subsection{ユーザーインターフェース}
-Ivyパッケージは、以下のコマンドで容易にインストールすることが可能となっている。ivyのインターフェースは以下のようになっており、同梱されているサンプルデータを用いて解析を簡易的に試すことができるようになっている。
-\begin{itembox}[l]{Ivyのインストール}
-	\begin{verbatim}
-		# 最新版のソースコードの取得
-		$ curl https://github.com/soh-i/Ivy/archive/master.zip
-		# パッケージのインストール
-		$ python setup.py install
-	\end{verbatim}
-\end{itembox}
+Ivyパッケージは、以下のコマンドで容易にインストールすることが可能となっている。Ivyのインターフェースは以下のようになっており、同梱されているサンプルデータを用いて解析を簡易的に試すことができるようになっている。以下に、ソースコードの取得とインストール方法を示した。
+{\small
+\begin{verbatim}
+# 1. 最新版のソースコードの取得
+$ curl https://github.com/soh-i/Ivy/archive/v.0.0.1-dev.tar.gz
+$ tar zxvf Ivy-v.0.0.1-dev.tar.gz
+$ cd Ivy-v.0.0.1-dev
 
-\subsubsection{ivyコマンドのインターフェース}
-\begin{itembox}[l]{\url{ivy}コマンドのインターフェース}
-	\begin{verbatim}
-		# ヘルプの表示
-		$ ivy --help
-		# 最も基本的な解析
-		$ ivy -f human_hg19.fa -r sample_rna.bam -d sample_dna.bam
-	\end{verbatim}
-\end{itembox}
+# 2. パッケージのインストール
+$ python setup.py install
+\end{verbatim}
+}
+
+\subsubsection{Ivyコマンドのインターフェース}
+Ivyのインストールが完了すると、Ivyとedit\_benchコマンドが実行可能となるり、以下のようなコマンドで実際の解析を行うことが可能である。
+
+{\small
+\begin{verbatim}
+$ Ivy -f sample/hg19.fa -r sample/rna.bam -G gene.gtf -o sample_out.vcf
+\end{verbatim}
+}
 
 \subsubsection{edit\_benchコマンドのインターフェース}
-edit\_benchは、以下のようなインターフェースから使用可能である。入力には、検出した編集サイトが記述されたVCFファイルの他に、対応する生物種とそのゲノムバージョンを与えると実行可能である。
-\par
-示した例では、他に\url{--plot}オプションで結果を図として描画する機能を有効にし、
-\url{--log}で保存するファイルを指定している。CSV形式で保存される他、カラムのスキーマなどは付録を参照されたい。尚、このオプションが指定されない場合には、標準出力に結果は出力される。\url{--source}オプションは、Darnedのデータセットから特定のセルラインや組織に限ったサブセットを生成し、それを正解セットとした精度検証を可能にする。デフォルトでは、この機能は無効になっており、Darnedの全ての編集サイトを対象に、精度検証の指標は計算される。以下、edit\_benchコマンドのインターフェースと簡単な解析例を示す。
-\par
-\begin{itembox}[l]{\url{edit_bench}コマンドのインターフェース}
-	\begin{verbatim}
-		# 基本的な使い方
-		$ edit_bench --vcf test.vcf --sp human_hg19 --plot --log bench.log
-		# 正解セットを脳のサンプルに限定する
-		$ edit_bench --vcf test.vcf --sp human_hg19 --source brain  
-		  --log bench.log
-	\end{verbatim}
-\end{itembox}
+edit\_benchは、入力に検出した編集サイトが記述されたVCFファイルの他に、対応する生物種とそのゲノムバージョンを与える。以下、edit\_benchコマンドのインターフェースと簡単な解析例を示す。
+{\small
+\begin{verbatim}
+# 1. 基本的な使い方
+$ edit_bench --vcf test.vcf --sp human_hg19 --plot --log bench.log
+
+# 2. 正解セットを脳のサンプルに限定する
+$ edit_bench --vcf test.vcf --sp human_hg19 --source brain --log bench.log
+\end{verbatim}
+\label{fig:edit_usage}
+}
+
+\#1は、基本的な使用方法について記した。\url{--vcf}が入力ファイル、\url{--sp}は生物種名とゲノムのバージョン、\url{--plot}は結果の可視化を意味している。\#2で示した例では、\url{--source}オプションを用いることで、この場合は脳から抽出されたRNAに限定したサブセットを生成し、精度の検証を可能にしている。このサブセットの生成は、組織のほかにもセルラインを限定することが可能である。デフォルトでは、この機能は無効になっており、DARNEDの全ての編集サイトを対象に、精度検証の指標は計算される。
 
 \newpage
 
 \section{本手法の性能評価}
 \subsection{性能評価に用いたRNA-seqデータ}
-\subsubsection{ヒト}
+本研究によって開発されたRNA編集サイトの検出ソフトウェアIvyの性能評価を行った。評価軸は、ソフトウェアとしての性能と検出手法としての精度をそれぞれ複数の観点から評価した。
+\par
+性能評価をするにあたり、RNA編集サイトの検出を目的とした先行研究でシーケンスされたRNA-seqデータの再解析を行った。ヒトを対象とした性能評価には、SRA (Sequence Read Archive, \url{www.ncbi.nlm.nih.gov/sra})において公開されている\cite{BahLeeLi1201}のシーケンスデータを用いた。\cite{BahLeeLi1201}の手法は、第二章で示したように、高い精度を示した研究事例であると同時に、siRNAによる\textit{Adar}のノックダウン株を同時にシーケンスしているため、実装した\textit{--adar\_nul]}オプションの効果も検証できると考えた。加えて、アラインメントデータを同時に公開していることから、マッピング処理におけるデータの再現性の問題を回避することが出来ることも理由の一つである。以下に取得したデータの内訳を示す。
 
-\begin{longtable}{cccc}
+\begin{longtable}{ccccc}
 	\vspace{-0.5cm}
-	\label{tab:darned}\\
-	\caption{PMID: 21960545 ヒトのデータ}\\
-	\cline{1-4}
-	\textbf{Sample} & \textbf{GSM ID} & \textbf{Cell line} & \textbf{Tissue} \\
-	\cline{1-4}
-	u87\_adar\_ctrl & GSM693746 & U87MG & Glioblastoma \\
-	u87\_adar\_kd & GSM693747 & U87MG & Glioblastoma \\
-	\cline{1-4}
+	\label{tab:bahn_sample}\\
+	\caption{検証に用いたヒトのRNA-seqサンプルの内訳}\\
+	\cline{1-5}
+	\textbf{Sample} & \textbf{GSM ID} & \textbf{Cell line} & \textbf{Tissue} & \textbf{Replicate}\\
+	\cline{1-5}
+	Adar\_control & GSM693747 & U87MG & Glioblastoma & 2\\
+	Adar\_null & GSM693746 & U87MG & Glioblastoma & 2\\
+	\cline{1-5}
 	\vspace{-0.8cm}
 \end{longtable}
+
 \begin{flushleft}
-	\small{Accurate identification of A-to-I RNA editing in human by transcriptome sequencing}
+	\small{\cite{BahLeeLi1201}によってシーケンスされたヒトのグリア芽細胞腫由来のセルラインU87MGのRNA-seq (Adar\_control)とsiRNAによるノックダウン株のRNA-seqデータ (Adar\_null)の情報を示す。二種類のサンプルは、どちらも2回の実験を行った生物学レプリケートがあり、合計のサンプル数は4つである。GSM IDは、塩基配列データなどが公開されているNCBI GEOの登録IDを指す。}
 \end{flushleft}
 
-\subsubsection{マウス}
-\subsubsection{ショウジョウバエ}
-\subsubsection{線虫}
-\begin{longtable}{cccc}
-	\vspace{-0.5cm}
-	\label{tab:darned}\\
-	\caption{PMID: 22673872 線虫のデータ}\\
-	\cline{1-4}
-	\textbf{Sample} & \textbf{GSM ID} & \textbf{Strain} & \textbf{Tissue} \\
-	\cline{1-4}
-	Wild-type small RNA rep1 & GSM715830 & Wild-type (N2) & Whole worm \\
-	Wild-type small RNA rep2& GSM715831 & Wild-type (N2) & Whole worm \\
-	Adar1-mutant small RNAs & GSM715832 & adr-1 (tm668) & Whole worm \\
-	Adar2-mutant small RNAs & GSM715833  & adr-2 (ok735) & Whole worm \\
-	Adar-1 and Adar-2 mutant small RNAs　& GSM715834 & adr-1;adr-2 (tm668;ok735) & Whole worm \\
-	\cline{1-4}
-	\vspace{-0.8cm}
-\end{longtable}
-\begin{flushleft}
-	\small{Effects of ADARs on small RNA processing pathways in \textit{C. elegans}.}
-\end{flushleft}
+Ivyの実行には、参照ゲノム配列や遺伝子アノテーションを必要とする。これらのデータは、UCSCの提供する参照ゲノム配列や遺伝子のアノテーションを\url{ftp://igenome:G3nom3s4u@ussd-ftp.illumina.com/Homo_sapiens/UCSC/hg19/Homo_sapiens_UCSC_hg19.tar.gz}より取得し、アノテーションは\url{genes.gtf}、参照ゲノム配列は\url{genome.fa}をそれぞれ用いることで解析を行った。
 
-\subsection{使用したパラメータ}
+%\begin{longtable}{cccc}
+%	\vspace{-0.5cm}
+%	\label{tab:darned}\\
+%	\caption{PMID: 22673872 線虫のデータ}\\
+%	\cline{1-4}
+%	\textbf{Sample} & \textbf{GSM ID} & \textbf{Strain} & \textbf{Tissue} \\
+%	\cline{1-4}
+%	Wild-type small RNA rep1 & GSM715830 & Wild-type (N2) & Whole worm \\
+%	Wild-type small RNA rep2& GSM715831 & Wild-type (N2) & Whole worm \\
+%	Adar1-mutant small RNAs & GSM715832 & adr-1 (tm668) & Whole worm \\
+%	Adar2-mutant small RNAs & GSM715833  & adr-2 (ok735) & Whole worm \\
+%	Adar-1 and Adar-2 mutant small RNAs　& GSM715834 & adr-1;adr-2 (tm668;ok735) & Whole worm \\
+%	\cline{1-4}
+%	\vspace{-0.8cm}
+%\end{longtable}
+%\begin{flushleft}
+%	\small{Effects of ADARs on small RNA processing pathways in \textit{C. elegans}.}
+%\end{flushleft}
 
-\subsection{性能評価の結果}
-\subsubsection{メモリ使用効率}
-\begin{figure}[!h]
+\subsection{性能比較に用いたソフトウェア}
+ソフトウェアの検出精度や実行時間などに関する性能評価には、Ivy v.0.0.1-devの他に、REDItools v0.1.3に同梱されているREDItoolDenovo.pyおよびSAMtools v.0.1.19を用いた。REDItoolsはRNA-seqデータを入力としたRNA編集サイトの検出ソフトウェア、SAMtoolsはSNPやSNVを検出するためのソフトウェアである。SAMtoolsは厳密にはRNA編集サイトの検出を目的としたソフトウェアではないが、先行研究で用いられた例があるため比較対象として適当だと考えた。それぞれ3つのソフトウェアは、基本的にデフォルト値での実行を行った。以下に実行時の詳細を記した。
+
+\subsubsection{Ivy}
+Ivyは、以下のように実行した。
+{\small
+\begin{verbatim}
+	Ivy -f hg19.fa -r U87MG_1_chr1.bam -G gene.gtf --one-based
+\end{verbatim}
+}
+実行時のオプションは、\texttt{-r}がRNA-seqのアラインメントデータ、\texttt{-G}は遺伝子のアノテーション、\texttt{--one-based}はゲノム座標の表現を1-originにするためである。
+
+\subsubsection{REDItools}
+REDItoolsは最新のバージョン1.0.3を使用し、以下のように実行した。
+{\small
+\begin{verbatim}
+	REDItools-1.0.3/REDItoolsDenove.py -i U87MG_1_chr1.bam -f human_hg19.fa \
+	-l -e -E -d -p -u -W
+\end{verbatim}
+}
+実行時に用いた各種のフィルタリングパラメータは、\texttt{-l}で編集サイトのみを出力、\texttt{-e}で複数座標にマップされたリードの排除、\texttt{-E}で複数種の塩基置換が見られた箇所を排除、\texttt{-d}でPCR重複したリードの排除、\texttt{-p}で適切なペアエンドリードのみを使用、\texttt{-u}ではマッピングクオリティの考慮、\texttt{-W}でホモポリマー領域のフィルターをそれぞれ意味する。このパラメータは、REDItoolsの論文 \cite{Picardi:2013aa}において使用されているパラメータを参考にし、SNPおよびスプライスサイトのアノテーション情報を除いたパラメータとなっている。これはIvyならびにSAMtoolsとの解析に用いるパラメータを均一化するためである。
+
+\subsubsection{SAMtools}
+SAMtoolsは、バージョン1.0.19を使用し、以下のように実行した。SAMtoolsはmpielupとよばれるサブコマンドとbcftoolsのviewと呼ばれるサブコマンドを組み合わせることで使用する。mpileupは、bamファイルをpileup形式に変換し、bcftoolsが変異箇所を検出する。
+{\small
+\begin{verbatim}
+	samtools mpileup -ugDSI -f human_hg.fa U87MG_1_chr1.bam | bcftools \
+	view -vcgIN
+\end{verbatim}
+}
+SAMtools mpileupはそれぞれ、\texttt{-ugD}は解析結果の出力に関するオプション、\texttt{-S}はstrand biasの計算、\texttt{-I}はINDELを検出しない、\texttt{-f}はリファレンスゲノムを意味する。bcftools viewは、\texttt{-v}で変異箇所のみを出力、\texttt{-cg}により変異を検出、\texttt{-I}はINDELのスキップ、\texttt{-N}は参照ゲノムがNの場合にスキップするオプションである。
+
+\section{性能評価の結果}
+\subsection{計算機上でのパフォーマンス}
+比較に用いた3つのソフトウェアをそれぞれ実行し、解析に要したメモリの使用量および計算時間に関する計測を行った。
+\par
+解析に要したメモリ容量を測定した結果を図\ref{fig:memory_usage}に示した。3つのソフトウェアで比較を行ったところ、IvyとREDItoolsは共に20MB程度の低メモリで動作することが示された。対して、SAMtoolsでは173MBのメモリを要求することが示された。
+
+\begin{figure}[!ht]
 	\begin{center}
-		\includegraphics[width=0.7 \hsize]{ivy_memory.png}
+		\includegraphics[width=0.7 \hsize]{Ivy_memory.eps}
 	\end{center}
 	\caption{メモリの使用効率のベンチマーク}
 	\begin{flushleft}
-		\small{Ivy、REDItools、samtoolsで比較した。}
+		\small{実行時におけるメモリ使用率 (MB)をそれぞれIvy、REDItools、SAMtoolsで比較した。エラーバーは、8回のベンチマークを取った際の標準誤差を示す。}
 	\end{flushleft}
-	\label{fig:f_measure}
+	\label{fig:memory_usage}
 \end{figure}
 
-\subsubsection{解析に要する累積時間}
-\begin{figure}[!h]
-	\begin{center}
-		\includegraphics[width=0.7 \hsize]{ivy_time.png}
-	\end{center}
-	\caption{解析時間のベンチマーク (dummy data)}
-	\begin{flushleft}
-		\small{Ivy、REDItools、samtoolsで比較した。}
-	\end{flushleft}
-	\label{fig:f_measure}
-\end{figure}
+\par
+IvyとREDItools、SAMtoolsについて、表\ref{tab:bahn_sample}のアラインメントデータを染色体ごとに分割した後に実行し、アラインメントデータのサイズに対する計算時間の結果を図\ref{fig:mesured_time}に示した。計測結果から、REDItoolsはゆらぎが見られるものの、基本的にデータサイズに対して線形に計算時間を要することが示された。REDItoolsとの比較においては、Ivyはアラインメントデータサイズに依存せず、1.3倍から2倍程度、高速に計算可能であることが示された。特に、75MB以上のアラインメントデータに対しては、1.5倍程度高速に動作しているため、絶対的な計算時間の短縮が見込まれた。
 
-\subsection{Ivyの検出精度}
-\subsubsection{適合率・再現率による検証}
-
-\subsection{実データを用いたRNA 編集サイトの解析}
 \begin{figure}[!ht]
 	\begin{center}
-		\includegraphics[width=0.5 \hsize]{overlap.png}
+		\includegraphics[width=0.8 \hsize]{time.eps}
 	\end{center}
-	\caption{追証実験}
+	\caption{アラインメントデータのサイトと計算時間}
 	\begin{flushleft}
-		\small{追証実験による編集サイトの一致と不一致をそれぞれ表す。}
+		\small{サイズが異なるアラインメントファイルに対して、要した計算時間を縦軸にプロットした結果を示す。赤がIvy、緑がREDItools、青がSAMtoolsをそれぞれ表す。データサイズが増加するにつれて、3つのソフトウェアの計算時間は大きく異なる。}
 	\end{flushleft}
-	\label{fig:overlap}
+	\label{fig:mesured_time}
 \end{figure}
 
-\newpage
+\subsection{検出精度の検証}
+表\ref{tab:bahn_sample}におけるAdar\_controlのRNA-seqデータに対して、\cite{BahLeeLi1201}で報告されている12,800個のA-to-I編集サイトについての再現性を比較することにより、検出精度を評価した。図\ref{fig:precision}には、適合率による精度検証を行った結果を示す。SAMtoolsとREDItoolsとの比較において、Ivyは低い適合率を持つことが示された。また、SAMtoolsは、20番から22番染色体などにおいては3つのソフトウェアの中でも比較的高い適合率を示した。
+\begin{figure}[!ht]
+	\begin{center}
+		\includegraphics[width=0.9 \hsize]{precision.eps}
+	\end{center}
+	\caption{染色体ごとの適合率の比較結果}
+	\begin{flushleft}
+		\small{縦軸に適合率、横軸に染色体をそれぞれの手法ごとに示す。赤がSAMtools、青がIvy、緑がSAMtoolsによる適合率をそれぞれ示す。尚、Y染色体において検出された編集サイトは0である。}
+	\end{flushleft}
+	\label{fig:precision}
+\end{figure}
+
+検出精度を再現率によって評価した結果を図\ref{fig:recall}に示す。適合率を各染色体ごとに算出したところ、本研究によって開発したIvyは18番染色体を除いた全ての染色体において、他の二つのソフトウェアと比較して高い再現率を示した。Ivyの次に高い再現率を示した手法はSAMtoolsであり、REDItoolsは全ての染色体を通して、低い再現率を示すことが明らかとなった。
+
+\begin{figure}[!ht]
+	\begin{center}
+		\includegraphics[width=0.9 \hsize]{recall.eps}
+	\end{center}
+	\caption{染色体ごとの再現率の比較結果}
+	\begin{flushleft}
+		\small{染色体ごとの再現率を精度検証に用いた3つのソフトウェアで比較した結果を示す。尚、Y染色体において検出された編集サイトは0である。}
+	\end{flushleft}
+	\label{fig:recall}
+\end{figure}
 
 \section{議論}
-\subsection{本手法により同定された編集サイト}
-\subsection{本手法の有用性}
+本研究は、RNA-seqデータを用いた高精度かつ高速なRNA編集サイトの検出手法の開発を目的としたソフトウェア・パッケージIvyの設計と実装を行い、オープンソースのフリーウェアとして公開した。Ivyは、RNA編集サイトの検出と検出結果から精度検証を行うことのできるソフトウェア・パッケージである。開発したIvyは、グリア芽細胞腫由来のRNA-seqデータを用いて、他のRNA編集サイトおよび変異解析のソフトウェアとの精度比較を行った (図\ref{fig:precision}および図\ref{fig:recall})。結果より、Ivyは適合率が低い一方で3つのソフトウェアの中で最も高い再現率を示すことが明らかとなった。
+\par
+適合率が低かった原因については、RNA編集サイトとして検出した箇所がIvyの場合は他のソフトウェアと比較して数倍程度多かったことが挙げられる。適合率は、検出した全サイトに正解が含まれる割合として計算される。このため、検出数が高くなるにつれて適合率は低くなる傾向にある。対して、Ivyは一部の染色体を除いて高い再現率を示した。高い再現率はすなわち\cite{BahLeeLi1201}による結果を最もよく再現した手法であることを意味している。この高い再現率を示した原因として、Ivyは他の2つのソフトウェアに対して、遺伝子のアノテーションを利用した転写物の方向性を考慮した計算を可能にした点が挙げられる。ADARによるA-to-G編集は、センス鎖の場合はA-to-G変異であるが、アンチセンス鎖の転写物に入った場合にはT-to-C変異として検出される。本研究で、精度検証に用いたRNA-seqデータは、PolyAセレクションをした通常のライブラリ調整をしているため、転写物の方向は不明である。Ivyでは既存の遺伝子モデルのアノテーション情報を利用することで、strand specific RNA-seqデータでない入力の場合にも、適切なミスマッチパタンの分類を行うことを可能にしたことが、本手法の高い再現率に貢献していると考えられた。REDIToolsおよびSAMtoolsでは検出されなかった一方、Ivyによって検出されたアンチセンス鎖におけるA-to-I編集サイトを可視化した例を図\ref{fig:visual}に示した。
+\par
+開発したソフトウェア・パッケージには、精度検証を行うツール\url{edit_bench}が同梱されている。\url{edit_bench}は、新規にRNA編集サイトを検出した場合に、検出精度を比較可能な指標で評価することを目的として開発された。このツールは、Ivyや他の研究によって同定されたRNA編集サイトの検出精度を簡便に測定するできることから、異なる検出手法やパラメータの統一的な比較を可能にしたと考えられる。
+\par
+本研究により開発されたRNA編集サイトの検出ソフトウェアIvyは、今後より再現率および適合率を向上させるための実装が求められる。特に、既存のソフトウェアよりも適合率が低いことは課題である。適合率を向上させるためには、現在は未実装であるスプライスサイト周辺のフィルタリングや、dbSNPなどのデータを用いたゲノムの変異箇所のフィルタリング、BLASTやBLATを用いた編集サイト周辺のリアラインメントは必須だと考えており、次期バージョンのリリースで順次対応する予定で開発を進めている。これらのフィルタリングはより厳格なフィルタリングを可能するため、検出サイトは減少することが予想されるが、同時に適合率が上昇することが期待される。こういった各種アラインメントデータへのフィルタリングの実装に加え、多様なセルラインや生物種のRNA-seqに対する検出精度を試験する必要性があると考えている。
+\par
+現在、Ivyの並列化の実装は、Pythonのmultiprocessingモジュールを利用し、染色体ごとの並列処理に対応している。しかしながら、染色体やコンティグには総塩基長に数倍以上の差があり、現在の実装では染色体は一つ以上のスレッドを使用できない。将来的には、各スレッドが解析する塩基長を均一化することで、より効率的な計算が可能な実装に変更する予定である。加えて、主要なクラスをCythonを介したCのコードに書き換えることで、計算時間の短縮化を検討している。
+\par
+Ivyの開発は、現在はベータ版 (v.0.0.1-dev)のリリースにとどまっており、開発が続行されているプロジェクトである。これまでに議論したようなアラインメントデータへのフィルタリング手法の更なる実装に加えて、多様なRNA-seqデータに対して安定した再現率および適合率を示すことが今後の開発に残された重要な課題だと認識している。

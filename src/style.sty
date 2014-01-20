@@ -59,7 +59,7 @@
     \setlength{\baselineskip}{34pt}
 	  {\LARGE \@jtitle}\\
     \par
-    {\LARGE \@etitle}
+    {\LARGE \textrm{\@etitle}}
 	\end{lineskiptitle}
 	\vfill
 		{\LARGE \@juniv\ \@jfaculty}
@@ -110,7 +110,8 @@
   \begin{center}
 	\vspace{1cm}\par
 	\begin{lineskipabst}
-      {2013年度 卒業論文} \\
+      %{2013年度 卒業論文} \\
+      {\@jsyear 年度 \@jclass} \\
       \vspace{1cm}\par 
       {\@jtitle}\\
       {\@etitle}\\
@@ -119,7 +120,7 @@
       {\@jauthor}
       \par
 	  \vspace{1cm}\par
-	  {\bf 論文要旨}\\
+	  {\bf 要旨}\\
 	\end{lineskipabst}
   \end{center}
   \parindent=1zw
