@@ -1,0 +1,122 @@
+\chapter*{付録}
+\addcontentsline{toc}{chapter}{付録}
+\section*{ivyの仕様}
+\subsection*{VCFフォーマットによる結果の出力}
+
+以下に、VCFフォーマットによる結果の出力例を示す。
+
+\scriptsize
+\begin{verbatim}
+##source=Ivy_v0.0.1
+##bam=file:///Users/yukke/Desktop/Bahn/ADARnull/siab_b_chr21.one.sam.true.sorted.bam
+##fileformat=VCFv4.1
+##filedate=2014/1/14 23:38:14
+##filename=file:///Users/yukke/dev/data/hg19.fa
+##IVY_PARAMS=<ID=rm_insertion,Value=True,Class=basic_filter>
+##IVY_PARAMS=<ID=min_rna_baq,Value=28,Class=basic_filter>
+##IVY_PARAMS=<ID=min_dna_mapq,Value=30,Class=basic_filter>
+##INFO=<ID=AF,Number=1,Type=Float,Description="Allele Frequency">
+##INFO=<ID=EF,Number=1,Type=Float,Description="Editing Frequency">
+##INFO=<ID=MAPQ,Number=1,Type=Integer,Description="Average Mapping Quality">
+##INFO=<ID=BACQ,Number=1,Type=Integer,Description="Average Phread-scaled Base Call Quality">
+##INFO=<ID=SB,Number=1,Type=Float,Description="Strand Bias of P-value">
+#CHROM POS   ID        REF ALT QUAL FILTER INFO                    FORMAT      NA00001        
+20     14370 rs6054257 G   A   29   PASS   NS=3;DP=14;AF=0.5;DB;H2 GT:GQ:DP:HQ 0|0:48:1:51,51 
+20     17330 .         T   A   3    q10    NS=3;DP=11;AF=0.017     GT:GQ:DP:HQ 0|0:49:3:58,50 
+\end{verbatim}
+\normalsize
+
+
+edit\_benchによる精度検証の結果は、以下のようなCSVファイルが生成される。カラムの意味などは、付録にまとめた。
+
+\scriptsize
+\begin{verbatim}
+[/home/yukke]$ edit_bench --vcf test.vcf --sp human_hg19 --plot --log bench.log
+[/home/yukke]$ cat bench.log
+Species,Source,DB,VCF,Precision,Recall,F-measure,AGs,Others,AnsCount
+human,All,darned_human_hg19.csv,test_data.vcf,0.150,0.73,0.33,13299,308744
+\end{verbatim}
+\normalsize
+
+edit\_benchの出力するCSVファイルのスキーマを以下に示す。
+\begin{easylist}[itemize]
+\scriptsize
+	\begin{verbatim}
+		@ Species: 生物種名
+		@ Source: 組織、セルラインなどによるサブセット名 [default: All]
+		@ DB: 正解セットのファイル名
+		@ VCF: 入力ファイル名
+		@ Precison: 適合率
+		@ Recall: 再現率
+		@ F-measure: F値
+		@ AGs: A-to-G編集の個数
+		@ Others: A-to-G編集以外の個数
+		@ AnsCount: 正解セットの個数
+	\end{verbatim}
+\end{easylist}
+\normalsize
+
+edit\_benchの全オプションを以下に示す。
+\scriptsize
+\begin{verbatim}
+arguments:
+  -h, --help     show this help message and exit
+  --vcf  [ ...]  VCF file(s)
+  --csv  [ ...]  CSV file(s), For debug mode
+  --source       specific sample/tissue/cell line [default: All]
+  --sp species   species and genome version (eg. human_hg19)
+  --plot         plot benchmarking stats [default: Off]
+  --log log      output name
+  --version      show program's version number and exit
+\end{verbatim}
+\normalsize
+
+\scriptsize
+\begin{verbatim}
+Options:
+  --version                                show program's version number and exit
+  -h, --help                               show this help message and exit
+  -f FASTA                                 Reference genome [fasta]
+  -r R_BAMS                                RNA-seq file(s) [bam]
+  -d D_BAMS                                DNA-seq file(s) [bam]
+  -o OUTNAME                               Output filename
+  -l REGIONS                               Explore specific region [chr:start-end]
+  -G GTF                                   GTF file to annotate the candidate sites
+  --single-end                             True if single-end RNA-seq experiments [default: False]
+  --one-based                              True if genomic coordinate is 1-origin [default: False]
+  -p N_THREADS                             Number of threads [default: 1]
+  --dry-run                                Dry run ivy
+  --verbose                                Show verbosely logging messages
+
+  Basic filter options:
+    --min-mutation-frequency=MIN_MUT_FREQ  Minimum allele frequency [default: 0.1]
+    --min-rna-coverage=MIN_RNA_COV         Minimum RNA-seq read coverage [default: 10]
+    --min-dna-coverage=MIN_DNA_COV         Minimum DNA-seq read coverage [default: 20]
+    --rm-duplicated-read                   Remove duplicated mapped reads [default: True]
+    --rm-deletion-read                     Remove deletion reads [default: True]
+    --rm-insertion-read                    Remove insertion reads [default: True]
+    --min-rna-mapq=MIN_RNA_MAPQ            Minimum mapping quality of RNA-seq data [default: 30]
+    --min-dna-mapq=MIN_DNA_MAPQ            Minimum mapping quality of DNA-seq data [default: 30]
+    --min-rna-baq=MIN_RNA_BAQ              Minimum phread-scaled base call quality in RNA-seq reads [default: 28]
+    --min-dna-baq=MIN_DNA_BAQ              Minimum phread-scaled base call quality in DNA-seq reads [default: 28]
+    --num-allow-type=NUM_TYPE              Number of allowing base modification type(s) [default: 1]
+
+  Statistical filter options:
+    --sig-level=SIG_LEVEL                  Significance level [default: 0.05]
+    --base-call-bias                       Considering base call bias [default: False]
+    --strand-bias                          Considering strand bias [default: False]
+    --positional-bias                      Considering positional bias [default: False]
+
+  Sample options:
+    --strand                               Strand-specific seq. data is used. [default: False]
+    --ko-strain                            Filter by Adar null strain RNA-seq data [default: False]
+    --replicate                            Considering biological replicate [default: False]
+
+  Extended filter options:
+    --blat-collection                      Reduce mis-alignment with Blat [default: False]
+    --snp=SNP_FILE                         Exclude variation sites [vcf]
+    --ss-num=SS_NUM                        Exclude site around the splice sistes [default: 5bp]
+    --trim-n=TRIM_N                        Do not call Nbp in up/down read [default: 10bp]
+    --mask-repeat                          Mask repeat sequence [default: False]
+  \end{verbatim}
+\normalsize  
