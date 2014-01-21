@@ -107,7 +107,7 @@ Ivyのインストールが完了すると、Ivyとedit\_benchコマンドが実
 
 {\small
 \begin{verbatim}
-$ Ivy -f sample/hg19.fa -r sample/rna.bam -G gene.gtf -o sample_out.vcf
+$ ivy -f sample/hg19.fa -r sample/rna.bam -G gene.gtf -o sample_out.vcf
 \end{verbatim}
 }
 
@@ -179,7 +179,7 @@ Ivyの実行には、参照ゲノム配列や遺伝子アノテーションを�
 Ivyは、以下のように実行した。
 {\small
 \begin{verbatim}
-	Ivy -f hg19.fa -r U87MG_1_chr1.bam -G gene.gtf --one-based
+	ivy -f hg19.fa -r U87MG_1_chr1.bam -G gene.gtf --one-based
 \end{verbatim}
 }
 実行時のオプションは、\texttt{-r}がRNA-seqのアラインメントデータ、\texttt{-G}は遺伝子のアノテーション、\texttt{--one-based}はゲノム座標の表現を1-originにするためである。
@@ -230,7 +230,7 @@ IvyとREDItools、SAMtoolsについて、表\ref{tab:bahn_sample}のアライン
 	\end{center}
 	\caption{アラインメントデータのサイトと計算時間}
 	\begin{flushleft}
-		\small{サイズが異なるアラインメントファイルに対して、要した計算時間を縦軸にプロットした結果を示す。赤がIvy、緑がREDItools、青がSAMtoolsをそれぞれ表す。データサイズが増加するにつれて、3つのソフトウェアの計算時間は大きく異なる。}
+		\small{サイズが異なるアラインメントファイルに対して、要した計算時間を縦軸にプロットした結果を示す。赤がSAMtools、緑がIvy、青がREDItoolsそれぞれ表す。データサイズが増加するにつれて、3つのソフトウェアの計算時間は大きく異なる。}
 	\end{flushleft}
 	\label{fig:mesured_time}
 \end{figure}
